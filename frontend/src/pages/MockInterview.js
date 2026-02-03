@@ -247,18 +247,15 @@ const MockInterview = () => {
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Questions Answered</span>
-                        <span className="font-semibold">0/10</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '0%' }}></div>
+                        <span className="font-semibold">{questionsAnswered}</span>
                       </div>
                     </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>Average Score</span>
-                        <span className="font-semibold text-green-600">-</span>
-                      </div>
-                    </div>
+                    {sessionId && (
+                      <Button variant="outline" size="sm" className="w-full" onClick={handleStartInterview}>
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Start New Session
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -287,20 +284,6 @@ const MockInterview = () => {
                       <span>Focus on impact and results</span>
                     </li>
                   </ul>
-                </CardContent>
-              </Card>
-
-              {/* Common Companies */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Asked By</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {question.companies.map((company, idx) => (
-                      <Badge key={idx} variant="outline">{company}</Badge>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             </div>
