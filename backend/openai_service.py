@@ -3,13 +3,19 @@ import json
 from openai import OpenAI
 from typing import Dict, List, Any
 
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+def get_openai_client():
+    """Get OpenAI client instance with API key"""
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY not found in environment variables")
+    return OpenAI(api_key=api_key)
 
 class OpenAIService:
     @staticmethod
     def generate_interview_feedback(question: str, answer: str) -> Dict[str, Any]:
         """Generate AI-powered interview feedback"""
         try:
+            client = get_openai_client()
             prompt = f"""You are an expert interview coach. Analyze this interview answer and provide constructive feedback.
 
 Question: {question}
@@ -61,6 +67,7 @@ Be constructive, specific, and encouraging. Focus on STAR method, clarity, and i
     def generate_resume_suggestions(section: str, current_text: str, role: str, experience_years: int) -> Dict[str, Any]:
         """Generate AI-powered resume improvement suggestions"""
         try:
+            client = get_openai_client()
             prompt = f"""You are a professional resume writer and ATS expert. Improve this resume section.
 
 Section: {section}
@@ -109,6 +116,7 @@ Format as JSON with keys: improved_text, keywords (array), tips (array)
     def analyze_ats_compatibility(resume_content: Dict[str, str], target_role: str) -> Dict[str, Any]:
         """Analyze resume for ATS compatibility"""
         try:
+            client = get_openai_client()
             resume_text = "\n".join([f"{k}: {v}" for k, v in resume_content.items()])
             
             prompt = f"""Analyze this resume for ATS compatibility and provide a score.
