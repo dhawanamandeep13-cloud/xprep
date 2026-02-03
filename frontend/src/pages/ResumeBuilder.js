@@ -28,7 +28,7 @@ const ResumeBuilder = () => {
 
   const handleGenerateAISuggestions = () => {
     // Mock AI suggestions
-    setAiSuggestions({
+    const suggestions = {
       summary: 'Results-driven professional with 5+ years of experience in software development. Proven track record of delivering high-impact solutions and leading cross-functional teams.',
       skills: ['Python', 'JavaScript', 'React', 'Node.js', 'AWS', 'Docker', 'Agile'],
       improvements: [
@@ -36,15 +36,20 @@ const ResumeBuilder = () => {
         'Include relevant certifications',
         'Optimize keywords for ATS compatibility'
       ]
-    });
+    };
+    setAiSuggestions(suggestions);
   };
 
-  const templates = [
-    { id: 'modern', name: 'Modern', preview: 'Clean and professional' },
-    { id: 'classic', name: 'Classic', preview: 'Traditional format' },
-    { id: 'creative', name: 'Creative', preview: 'Stand out design' },
-    { id: 'minimal', name: 'Minimal', preview: 'Simple and elegant' }
-  ];
+  const getTemplates = () => {
+    return [
+      { id: 'modern', name: 'Modern', preview: 'Clean and professional' },
+      { id: 'classic', name: 'Classic', preview: 'Traditional format' },
+      { id: 'creative', name: 'Creative', preview: 'Stand out design' },
+      { id: 'minimal', name: 'Minimal', preview: 'Simple and elegant' }
+    ];
+  };
+  
+  const templates = getTemplates();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 pt-24 pb-16">
