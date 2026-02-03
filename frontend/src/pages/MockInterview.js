@@ -4,38 +4,89 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Mic, MicOff, Play, Pause, SkipForward, RotateCcw } from 'lucide-react';
-import { mockInterviewQuestions } from '../mockData';
+import { Mic, MicOff, SkipForward, RotateCcw, Loader2 } from 'lucide-react';
+import { toast } from '../hooks/use-toast';
+import APIService from '../services/api';
 
 const MockInterview = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [interviewType, setInterviewType] = useState('behavioral');
+  const [sessionId, setSessionId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+
+  const handleStartInterview = async () => {
+    setIsLoading(true);
+    try {
+      const data = await APIService.startMockInterview(interviewType);
+      setSessionId(data.session_id);
+      setCurrentQuestion(data.question);
+      setFeedback(null);
+      setAnswer('');
+      setQuestionsAnswered(0);
+      toast({
+        title: "Interview Started!",
+        description: "Answer the question to get AI-powered feedback.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start interview. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleStartRecording = () => {
     setIsRecording(!isRecording);
     // Mock: In real implementation, this would use Web Speech API
   };
 
-  const handleSubmitAnswer = () => {
-    // Mock feedback
-    setFeedback({
-      score: 85,
-      strengths: ['Clear communication', 'Good use of STAR method', 'Relevant examples'],
-      improvements: ['Add more quantifiable results', 'Expand on leadership aspects'],
-      suggestion: 'Your answer demonstrates good structure. Consider adding specific metrics to strengthen your impact.'
-    });
+  const handleSubmitAnswer = async () => {
+    if (!answer.trim()) {
+      toast({
+        title: "Empty Answer",
+        description: "Please provide an answer before submitting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const data = await APIService.submitAnswer(sessionId, currentQuestion.id, answer);
+      setFeedback(data.feedback);
+      setQuestionsAnswered(prev => prev + 1);
+      
+      if (data.next_question) {
+        setCurrentQuestion(data.next_question);
+        setAnswer('');
+      }
+      
+      toast({
+        title: "Feedback Received!",
+        description: `Score: ${data.feedback.score}/100`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to get feedback. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleNextQuestion = () => {
-    setCurrentQuestion((prev) => (prev + 1) % mockInterviewQuestions.length);
+  const handleNextQuestion = async () => {
     setAnswer('');
     setFeedback(null);
   };
-
-  const question = mockInterviewQuestions[currentQuestion];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 pt-24 pb-16">
