@@ -8,6 +8,7 @@ import MockInterview from "./pages/MockInterview";
 import ResumeBuilder from "./pages/ResumeBuilder";
 import JobHunter from "./pages/JobHunter";
 import QuestionsBank from "./pages/QuestionsBank";
+import Modules from "./pages/Modules";
 import { Toaster } from "./components/ui/toaster";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/resume-builder" element={<ResumeBuilder />} />
           <Route path="/job-hunter" element={<JobHunter />} />
           <Route path="/questions-bank" element={<QuestionsBank />} />
+          <Route path="/modules" element={<Modules />} />
         </Routes>
         <Footer />
         <Toaster />
