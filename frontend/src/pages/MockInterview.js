@@ -104,80 +104,99 @@ const MockInterview = () => {
             {/* Main Interview Area */}
             <div className="lg:col-span-2 space-y-6">
               {/* Interview Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Interview Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4">
-                    <Select value={interviewType} onValueChange={setInterviewType}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="behavioral">Behavioral Interview</SelectItem>
-                        <SelectItem value="technical">Technical Interview</SelectItem>
-                        <SelectItem value="case">Case Interview</SelectItem>
-                        <SelectItem value="general">General Interview</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" onClick={handleNextQuestion}>
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Reset
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Current Question */}
-              <Card className="border-2 border-blue-200">
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge>{question.category}</Badge>
-                    <Badge variant="secondary">{question.difficulty}</Badge>
-                  </div>
-                  <CardTitle className="text-2xl">{question.question}</CardTitle>
-                  <CardDescription>
-                    Question {currentQuestion + 1} of {mockInterviewQuestions.length}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Textarea
-                      placeholder="Type your answer here or use voice recording..."
-                      rows={8}
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      className="resize-none"
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        variant={isRecording ? 'destructive' : 'outline'}
-                        onClick={handleStartRecording}
-                        className="flex-1"
-                      >
-                        {isRecording ? (
+              {!sessionId && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Start Your Practice Interview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Select value={interviewType} onValueChange={setInterviewType}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="behavioral">Behavioral Interview</SelectItem>
+                          <SelectItem value="technical">Technical Interview</SelectItem>
+                          <SelectItem value="case">Case Interview</SelectItem>
+                          <SelectItem value="general">General Interview</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleStartInterview} className="w-full" size="lg" disabled={isLoading}>
+                        {isLoading ? (
                           <>
-                            <MicOff className="w-4 h-4 mr-2" />
-                            Stop Recording
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Starting...
                           </>
                         ) : (
-                          <>
-                            <Mic className="w-4 h-4 mr-2" />
-                            Start Recording
-                          </>
+                          'Start Interview'
                         )}
                       </Button>
-                      <Button onClick={handleSubmitAnswer} disabled={!answer} className="flex-1">
-                        Get AI Feedback
-                      </Button>
-                      <Button variant="outline" onClick={handleNextQuestion}>
-                        <SkipForward className="w-4 h-4" />
-                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Current Question */}
+              {currentQuestion && (
+                <Card className="border-2 border-blue-200">
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge>{currentQuestion.category}</Badge>
+                      <Badge variant="secondary">{currentQuestion.difficulty}</Badge>
+                    </div>
+                    <CardTitle className="text-2xl">{currentQuestion.text}</CardTitle>
+                    <CardDescription>
+                      Question {questionsAnswered + 1}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Textarea
+                        placeholder="Type your answer here or use voice recording..."
+                        rows={8}
+                        value={answer}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        className="resize-none"
+                        disabled={isLoading}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          variant={isRecording ? 'destructive' : 'outline'}
+                          onClick={handleStartRecording}
+                          className="flex-1"
+                          disabled={isLoading}
+                        >
+                          {isRecording ? (
+                            <>
+                              <MicOff className="w-4 h-4 mr-2" />
+                              Stop Recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="w-4 h-4 mr-2" />
+                              Start Recording
+                            </>
+                          )}
+                        </Button>
+                        <Button onClick={handleSubmitAnswer} disabled={!answer || isLoading} className="flex-1">
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Getting Feedback...
+                            </>
+                          ) : (
+                            'Get AI Feedback'
+                          )}
+                        </Button>
+                        <Button variant="outline" onClick={handleNextQuestion} disabled={isLoading}>
+                          <SkipForward className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Feedback */}
               {feedback && (
