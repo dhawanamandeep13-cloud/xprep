@@ -9,11 +9,8 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import {
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
-import { educationModules, aiTools, testimonials, stats } from "../mockData";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { educationModules, testimonials, stats } from "../mockData";
 
 const Home = () => {
   return (
@@ -41,7 +38,7 @@ const Home = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/mock-interview">
+              <Link to="/MockInterview">
                 <Button size="lg" className="text-lg px-8">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -90,147 +87,55 @@ const Home = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {aiTools.map((tool) => (
-              <Link
-                key={tool.id}
-                to={`/${tool.id}`}
-                className="no-underline text-inherit"
-              >
-                <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
-                  <CardHeader>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-4xl">{tool.icon}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Try Now{" "}
-                        <ArrowRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    </div>
 
-                    <CardTitle className="text-2xl">
-                      {tool.title}
-                    </CardTitle>
-
-                    <CardDescription className="text-base">
-                      {tool.description}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {tool.features.map((feature, idx) => (
-                        <Badge key={idx} variant="secondary">
-                          {feature}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Education Modules Section */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              Career Preparation Modules
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Comprehensive learning paths designed to prepare you
-              for every stage of your career journey
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {educationModules.map((module) => (
-              <Card key={module.id} className="hover:shadow-lg transition-shadow">
+            {/* Mock Interview */}
+            <Link to="/MockInterview" className="no-underline text-inherit">
+              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
                 <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl">{module.icon}</span>
-                  </div>
-
-                  <CardTitle className="text-lg">
-                    {module.title}
-                  </CardTitle>
-
-                  <CardDescription className="text-sm">
-                    {module.description}
+                  <CardTitle className="text-2xl">AI Mock Interview</CardTitle>
+                  <CardDescription className="text-base">
+                    Practice real interview questions and get instant AI-powered feedback.
                   </CardDescription>
                 </CardHeader>
-
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        {module.topics} Topics
-                      </span>
-                      <span className="font-medium text-blue-600">
-                        {module.progress}%
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all"
-                        style={{ width: `${module.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </CardContent>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+            </Link>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              Proven Results with Xprep
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              From first application to final offer, Xprep empowers
-              job seekers to succeed
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {testimonials.map((testimonial) => (
-              <Card key={testimonial.id} className="hover:shadow-lg transition-shadow">
+            {/* Resume Builder */}
+            <Link to="/ResumeBuilder" className="no-underline text-inherit">
+              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
                 <CardHeader>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xl font-bold">
-                      {testimonial.name.charAt(0)}
-                    </div>
-
-                    <div>
-                      <CardTitle className="text-lg">
-                        {testimonial.name}
-                      </CardTitle>
-                      <CardDescription>
-                        {testimonial.role}
-                      </CardDescription>
-                      <div className="text-sm font-medium text-blue-600">
-                        {testimonial.company}
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-700 italic">
-                    "{testimonial.quote}"
-                  </p>
+                  <CardTitle className="text-2xl">AI Resume Builder</CardTitle>
+                  <CardDescription className="text-base">
+                    Create professional, ATS-ready resumes in minutes.
+                  </CardDescription>
                 </CardHeader>
               </Card>
-            ))}
+            </Link>
+
+            {/* Job Hunter */}
+            <Link to="/JobHunter" className="no-underline text-inherit">
+              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="text-2xl">AI Job Hunter</CardTitle>
+                  <CardDescription className="text-base">
+                    Apply smarter with AI-powered job matching.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            {/* Questions Bank */}
+            <Link to="/QuestionsBank" className="no-underline text-inherit">
+              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Interview Questions Bank</CardTitle>
+                  <CardDescription className="text-base">
+                    Access thousands of real interview questions.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
           </div>
         </div>
       </section>
@@ -243,10 +148,9 @@ const Home = () => {
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
             Turn anxiety into confidence with AI-powered interview preparation.
-            Start your free trial today and walk into your next interview ready to win.
           </p>
 
-          <Link to="/mock-interview">
+          <Link to="/MockInterview">
             <Button size="lg" variant="secondary" className="text-lg px-8">
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
