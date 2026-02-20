@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config";
 import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';

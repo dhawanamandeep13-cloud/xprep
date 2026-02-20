@@ -1,3 +1,5 @@
+import { educationModules } from "../mockData";
+import Modules from "./Modules";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -139,7 +141,54 @@ const Home = () => {
           </div>
         </div>
       </section>
+{/* Career Preparation Modules Section */}
+<section className="py-20 bg-gray-50">
+  <div className="container mx-auto px-4">
 
+    <div className="text-center mb-16">
+      <h2 className="text-4xl font-bold mb-4">
+        Career Preparation Modules
+      </h2>
+      <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        Comprehensive learning paths designed to prepare you for every stage of your career journey
+      </p>
+    </div>
+
+    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+
+      {educationModules.slice(0,4).map((module) => (
+        <Card key={module.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-purple-200">
+
+          <CardHeader>
+            <CardTitle className="text-xl">{module.title}</CardTitle>
+            <CardDescription className="text-sm">
+              {module.description}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <Link to="/modules">
+              <Button className="w-full mt-4">
+                Start Module
+              </Button>
+            </Link>
+          </CardContent>
+
+        </Card>
+      ))}
+
+    </div>
+
+    <div className="text-center mt-12">
+      <Link to="/modules">
+        <Button size="lg" variant="outline">
+          View All Modules
+        </Button>
+      </Link>
+    </div>
+
+  </div>
+</section>
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4 text-center">
