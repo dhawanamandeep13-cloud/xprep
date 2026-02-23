@@ -1,5 +1,3 @@
-import { educationModules } from "../mockData";
-import Modules from "./Modules";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -12,17 +10,19 @@ import {
 } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { educationModules, testimonials, stats } from "../mockData";
+import { educationModules, stats } from "../mockData";
 
 const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      
-      {/* Hero Section */}
+
+      {/* ================= HERO SECTION ================= */}
       <section className="relative overflow-hidden pt-20 pb-32">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-70"></div>
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
+
             <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-200">
               <Sparkles className="w-3 h-3 mr-1" />
               AI-Powered Career Intelligence Platform
@@ -72,13 +72,16 @@ const Home = () => {
                 <div className="text-gray-600">Interviews Today</div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* AI Tools Section */}
+
+      {/* ================= AI TOOLS SECTION ================= */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
+
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">
               AI-Powered Interview Tools
@@ -90,48 +93,44 @@ const Home = () => {
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
 
-            {/* Mock Interview */}
             <Link to="/MockInterview" className="no-underline text-inherit">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
+              <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
                 <CardHeader>
                   <CardTitle className="text-2xl">AI Mock Interview</CardTitle>
-                  <CardDescription className="text-base">
+                  <CardDescription>
                     Practice real interview questions and get instant AI-powered feedback.
                   </CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            {/* Resume Builder */}
             <Link to="/ResumeBuilder" className="no-underline text-inherit">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
+              <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
                 <CardHeader>
                   <CardTitle className="text-2xl">AI Resume Builder</CardTitle>
-                  <CardDescription className="text-base">
+                  <CardDescription>
                     Create professional, ATS-ready resumes in minutes.
                   </CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            {/* Job Hunter */}
             <Link to="/JobHunter" className="no-underline text-inherit">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
+              <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
                 <CardHeader>
                   <CardTitle className="text-2xl">AI Job Hunter</CardTitle>
-                  <CardDescription className="text-base">
+                  <CardDescription>
                     Apply smarter with AI-powered job matching.
                   </CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            {/* Questions Bank */}
             <Link to="/QuestionsBank" className="no-underline text-inherit">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
+              <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-200 cursor-pointer">
                 <CardHeader>
                   <CardTitle className="text-2xl">Interview Questions Bank</CardTitle>
-                  <CardDescription className="text-base">
+                  <CardDescription>
                     Access thousands of real interview questions.
                   </CardDescription>
                 </CardHeader>
@@ -141,60 +140,64 @@ const Home = () => {
           </div>
         </div>
       </section>
-{/* Career Preparation Modules Section */}
-<section className="py-20 bg-gray-50">
-  <div className="container mx-auto px-4">
 
-    <div className="text-center mb-16">
-      <h2 className="text-4xl font-bold mb-4">
-        Career Preparation Modules
-      </h2>
-      <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-        Comprehensive learning paths designed to prepare you for every stage of your career journey
-      </p>
-    </div>
 
-    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+      {/* ================= CAREER MODULES SECTION ================= */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
 
-      {educationModules.slice(0,4).map((module) => (
-        <Card key={module.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-purple-200">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">
+              Career Preparation Modules
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Comprehensive learning paths designed to prepare you for every stage of your career journey
+            </p>
+          </div>
 
-          <CardHeader>
-            <CardTitle className="text-xl">{module.title}</CardTitle>
-            <CardDescription className="text-sm">
-              {module.description}
-            </CardDescription>
-          </CardHeader>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {educationModules.slice(0, 4).map((module) => (
+              <Card
+                key={module.id}
+                className="hover:shadow-xl transition-all duration-300 border-2 hover:border-purple-200"
+              >
+                <CardHeader>
+                  <CardTitle className="text-xl">{module.title}</CardTitle>
+                  <CardDescription>
+                    {module.description}
+                  </CardDescription>
+                </CardHeader>
 
-          <CardContent>
+                <CardContent>
+                  <Link to="/modules">
+                    <Button className="w-full mt-4">
+                      Start Module
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
             <Link to="/modules">
-              <Button className="w-full mt-4">
-                Start Module
+              <Button size="lg" variant="outline">
+                View All Modules
               </Button>
             </Link>
-          </CardContent>
+          </div>
 
-        </Card>
-      ))}
+        </div>
+      </section>
 
-    </div>
 
-    <div className="text-center mt-12">
-      <Link to="/modules">
-        <Button size="lg" variant="outline">
-          View All Modules
-        </Button>
-      </Link>
-    </div>
-
-  </div>
-</section>
-      {/* CTA Section */}
+      {/* ================= CTA SECTION ================= */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-6">
             Ready to Land More Offers?
           </h2>
+
           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
             Turn anxiety into confidence with AI-powered interview preparation.
           </p>
@@ -207,6 +210,7 @@ const Home = () => {
           </Link>
         </div>
       </section>
+
     </div>
   );
 };
