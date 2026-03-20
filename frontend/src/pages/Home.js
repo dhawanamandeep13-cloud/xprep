@@ -1,887 +1,768 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import React from "react";
 
-// ── Inline styles & keyframes injected once ──────────────────────────────────
-const GlobalStyles = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+/* ─────────────────────────────────────────────────────────────
+   Xprep – Home.js  (drop-in replacement)
+   Stack : React + inline styles (no extra dependencies)
+   Fonts : Sora + DM Sans  →  add to your public/index.html
+           <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+───────────────────────────────────────────────────────────── */
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── DESIGN TOKENS ─────────────────────────────────────────── */
+const T = {
+  blue:        "#2563EB",
+  blueDark:    "#1D4ED8",
+  blueLight:   "#EFF6FF",
+  purple:      "#7C3AED",
+  purpleLight: "#F5F0FF",
+  navy:        "#0F172A",
+  slate:       "#1E293B",
+  gray:        "#64748B",
+  border:      "#E2E8F0",
+  green:       "#059669",
+  red:         "#DC2626",
+  gold:        "#F59E0B",
+  white:       "#FFFFFF",
+};
 
-    :root {
-      --blue-950: #020b18;
-      --blue-900: #061529;
-      --blue-800: #0a2540;
-      --blue-700: #0e3460;
-      --blue-600: #1a4f8a;
-      --blue-500: #2370c4;
-      --blue-400: #4090e0;
-      --blue-300: #7ab8f5;
-      --blue-100: #dbeeff;
-      --white:    #ffffff;
-      --grey-100: #f0f5fb;
-      --grey-200: #d8e4f0;
-      --grey-500: #6b87a8;
-      --accent:   #f7c948;
-      --font-display: 'Sora', sans-serif;
-      --font-body:    'DM Sans', sans-serif;
-    }
+/* ── KEYFRAME INJECTION (runs once) ────────────────────────── */
+const injectStyles = () => {
+  if (document.getElementById("xprep-home-styles")) return;
+  const style = document.createElement("style");
+  style.id = "xprep-home-styles";
+  style.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
-    html { scroll-behavior: smooth; }
+    * { box-sizing: border-box; }
 
-    body {
-      font-family: var(--font-body);
-      background: var(--white);
-      color: var(--blue-900);
-      overflow-x: hidden;
+    @keyframes xp-blink {
+      0%,100% { opacity:1; }
+      50%      { opacity:0.3; }
     }
-
-    /* ── Animations ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(32px); }
-      to   { opacity: 1; transform: translateY(0); }
+    @keyframes xp-shine {
+      0%   { left:-50px; }
+      100% { left:100%;  }
     }
-    @keyframes fadeIn {
-      from { opacity: 0; } to { opacity: 1; }
+    @keyframes xp-badge-pulse {
+      0%,100% { box-shadow: 0 6px 24px rgba(5,150,105,0.30); }
+      50%      { box-shadow: 0 8px 32px rgba(5,150,105,0.50); }
     }
-    @keyframes floatA {
-      0%,100% { transform: translateY(0px) rotate(0deg); }
-      50%      { transform: translateY(-18px) rotate(4deg); }
+    @keyframes xp-card-in {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0);    }
     }
-    @keyframes floatB {
-      0%,100% { transform: translateY(0px) rotate(0deg); }
-      50%      { transform: translateY(-12px) rotate(-3deg); }
-    }
-    @keyframes pulse-ring {
-      0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(35,112,196,0.5); }
-      70%  { transform: scale(1);    box-shadow: 0 0 0 14px rgba(35,112,196,0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(35,112,196,0); }
-    }
-    @keyframes shimmer {
-      0%   { background-position: -400px 0; }
-      100% { background-position: 400px 0; }
-    }
-    @keyframes countUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes gradientShift {
-      0%,100% { background-position: 0% 50%; }
-      50%      { background-position: 100% 50%; }
-    }
-    @keyframes slideInLeft {
-      from { opacity: 0; transform: translateX(-40px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(40px); }
-      to   { opacity: 1; transform: translateX(0); }
+    @keyframes xp-gradient-flow {
+      0%   { background-position: 0%   50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0%   50%; }
     }
 
-    .animate-fade-up   { animation: fadeUp 0.7s ease forwards; }
-    .animate-fade-in   { animation: fadeIn 0.6s ease forwards; }
-    .animate-float-a   { animation: floatA 6s ease-in-out infinite; }
-    .animate-float-b   { animation: floatB 8s ease-in-out infinite; }
-    .delay-1 { animation-delay: 0.15s; }
-    .delay-2 { animation-delay: 0.30s; }
-    .delay-3 { animation-delay: 0.45s; }
-    .delay-4 { animation-delay: 0.60s; }
-    .delay-5 { animation-delay: 0.75s; }
-
-    /* ── Nav ── */
-    .xp-nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 5%;
-      height: 68px;
-      transition: background 0.3s, box-shadow 0.3s;
-    }
-    .xp-nav.scrolled {
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 1px 0 var(--grey-200);
-    }
-    .xp-nav-logo {
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: 1.5rem;
-      color: var(--blue-800);
+    .xp-nav-link {
       text-decoration: none;
-      letter-spacing: -0.5px;
+      color: #64748B;
+      font-size: 15px;
+      font-weight: 500;
+      transition: color .2s;
+      font-family: 'DM Sans', sans-serif;
     }
-    .xp-nav-logo span { color: var(--blue-500); }
-    .xp-nav-links { display: flex; gap: 2rem; align-items: center; }
-    .xp-nav-links a {
-      font-size: 0.9rem; font-weight: 500;
-      color: var(--blue-700); text-decoration: none;
-      transition: color 0.2s;
-    }
-    .xp-nav-links a:hover { color: var(--blue-500); }
-    .xp-nav-cta {
-      background: var(--blue-500);
-      color: var(--white) !important;
-      padding: 0.5rem 1.25rem;
-      border-radius: 8px;
-      font-weight: 600 !important;
-      transition: background 0.2s, transform 0.2s !important;
-    }
-    .xp-nav-cta:hover { background: var(--blue-600) !important; transform: translateY(-1px); }
+    .xp-nav-link:hover { color: #2563EB; }
 
-    /* ── Hero ── */
-    .xp-hero {
-      min-height: 100vh;
-      display: flex; align-items: center;
-      padding: 100px 5% 60px;
-      background: linear-gradient(135deg, #f8fbff 0%, #eaf3ff 50%, #f0f7ff 100%);
-      position: relative; overflow: hidden;
+    .xp-btn-ghost {
+      background: none;
+      border: 1.5px solid #E2E8F0;
+      padding: 9px 22px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #0F172A;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
     }
-    .xp-hero-bg-circle {
-      position: absolute; border-radius: 50%;
+    .xp-btn-ghost:hover { border-color: #2563EB; color: #2563EB; }
+
+    .xp-btn-nav {
+      background: #2563EB;
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .xp-btn-nav:hover { background: #1D4ED8; }
+
+    .xp-btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #fff;
+      border: none;
+      padding: 15px 32px;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .25s, box-shadow .25s;
+      box-shadow: 0 6px 20px rgba(37,99,235,0.38);
+    }
+    .xp-btn-hero:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(37,99,235,0.45);
+    }
+
+    .xp-btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      color: #0F172A;
+      border: 1.5px solid #E2E8F0;
+      padding: 15px 32px;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .25s, color .25s;
+    }
+    .xp-btn-outline:hover { border-color: #2563EB; color: #2563EB; }
+
+    .xp-attr-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      transition: transform .2s, box-shadow .2s;
+      animation: xp-card-in 0.5s ease both;
+    }
+    .xp-attr-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.09);
+    }
+    .xp-attr-card.bad  { border: 1.5px solid #FEE2E2; }
+    .xp-attr-card.good { border: 1.5px solid #D1FAE5; }
+
+    .xp-tool-card {
+      background: #fff;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 28px 24px;
+      cursor: pointer;
+      transition: border-color .25s, transform .25s, box-shadow .25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .xp-tool-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #2563EB, #7C3AED);
+      opacity: 0;
+      transition: opacity .25s;
+    }
+    .xp-tool-card:hover {
+      border-color: #2563EB;
+      transform: translateY(-4px);
+      box-shadow: 0 14px 36px rgba(37,99,235,0.11);
+    }
+    .xp-tool-card:hover::after { opacity: 1; }
+
+    .xp-proof-card {
+      background: #fff;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .xp-btn-white {
+      background: #fff;
+      color: #0F172A;
+      border: none;
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .25s, color .25s, transform .25s;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.22);
+    }
+    .xp-btn-white:hover {
+      background: #EFF6FF;
+      color: #2563EB;
+      transform: translateY(-2px);
+    }
+
+    .xp-foot-link {
+      text-decoration: none;
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      transition: color .2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .xp-foot-link:hover { color: #fff; }
+
+    .xp-badge-dot {
+      width: 8px; height: 8px;
+      background: #2563EB;
+      border-radius: 50%;
+      animation: xp-blink 1.8s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    .xp-shine {
+      position: absolute;
+      top: 0; left: -50px;
+      width: 50px; height: 3px;
+      background: rgba(255,255,255,0.75);
+      border-radius: 2px;
+      animation: xp-shine 1.8s linear infinite;
+    }
+    .xp-shine.delay { animation-delay: 0.6s; }
+
+    .xp-outcome-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #059669, #10B981);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-top: 6px;
+      animation: xp-badge-pulse 3s ease-in-out infinite;
+    }
+
+    .xp-stat-card-inner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      border: 1.5px solid #FEE2E2;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-top: 6px;
+    }
+
+    .xp-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+      background-size: 56px 56px;
       pointer-events: none;
     }
-    .xp-hero-bg-circle-1 {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(35,112,196,0.08) 0%, transparent 70%);
-      top: -150px; right: -100px;
+
+    .xp-divider-line {
+      position: absolute;
+      top: 10%; bottom: 10%;
+      width: 1px;
+      background: linear-gradient(to bottom,
+        transparent,
+        #E2E8F0 30%,
+        #E2E8F0 70%,
+        transparent);
     }
-    .xp-hero-bg-circle-2 {
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, rgba(35,112,196,0.06) 0%, transparent 70%);
-      bottom: -100px; left: -80px;
-    }
-    .xp-hero-inner {
-      max-width: 1200px; margin: 0 auto; width: 100%;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
-    }
-    .xp-hero-badge {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      background: rgba(35,112,196,0.1);
-      border: 1px solid rgba(35,112,196,0.2);
-      border-radius: 100px;
-      padding: 0.35rem 1rem;
-      font-size: 0.8rem; font-weight: 600;
-      color: var(--blue-600);
-      margin-bottom: 1.5rem;
-    }
-    .xp-hero-badge-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--blue-500);
-      animation: pulse-ring 2s infinite;
-    }
-    .xp-hero-title {
-      font-family: var(--font-display);
-      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
-      font-weight: 800;
-      line-height: 1.1;
-      color: var(--blue-950);
-      letter-spacing: -1.5px;
-      margin-bottom: 1.25rem;
-      opacity: 0;
-    }
-    .xp-hero-title .highlight {
-      background: linear-gradient(135deg, var(--blue-500), var(--blue-400));
+
+    .xp-h1-gradient {
+      background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .xp-hero-sub {
-      font-size: 1.1rem; font-weight: 300; line-height: 1.7;
-      color: var(--grey-500);
-      max-width: 480px;
-      margin-bottom: 2.5rem;
-      opacity: 0;
-    }
-    .xp-hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; opacity: 0; }
-    .xp-btn-primary {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      background: var(--blue-500);
-      color: var(--white);
-      padding: 0.85rem 2rem;
-      border-radius: 10px;
-      font-family: var(--font-display);
-      font-weight: 700; font-size: 1rem;
-      text-decoration: none;
-      box-shadow: 0 4px 20px rgba(35,112,196,0.35);
-      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-    }
-    .xp-btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(35,112,196,0.45);
-      background: var(--blue-600);
-    }
-    .xp-btn-secondary {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      background: transparent;
-      border: 2px solid var(--blue-300);
-      color: var(--blue-700);
-      padding: 0.85rem 1.75rem;
-      border-radius: 10px;
-      font-family: var(--font-display);
-      font-weight: 600; font-size: 1rem;
-      text-decoration: none;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-    }
-    .xp-btn-secondary:hover {
-      border-color: var(--blue-500);
-      background: rgba(35,112,196,0.05);
-      color: var(--blue-500);
+
+    .xp-stat-num-gradient {
+      background: linear-gradient(135deg, #2563EB, #7C3AED);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    /* Hero visual card */
-    .xp-hero-visual { position: relative; opacity: 0; }
-    .xp-hero-card {
-      background: var(--white);
-      border-radius: 20px;
-      padding: 2rem;
-      box-shadow: 0 20px 60px rgba(14,52,96,0.12), 0 4px 16px rgba(14,52,96,0.06);
-      position: relative; z-index: 2;
+    /* Steps connector line */
+    .xp-steps-wrap {
+      position: relative;
     }
-    .xp-hero-card-header {
-      display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-    .xp-hero-card-avatar {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--blue-500), var(--blue-400));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem;
-    }
-    .xp-hero-card-name { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; color: var(--blue-900); }
-    .xp-hero-card-role { font-size: 0.78rem; color: var(--grey-500); }
-    .xp-hero-card-q {
-      background: var(--grey-100);
-      border-radius: 10px; padding: 1rem;
-      font-size: 0.88rem; color: var(--blue-800);
-      font-style: italic; margin-bottom: 1rem;
-      border-left: 3px solid var(--blue-400);
-    }
-    .xp-hero-card-answer {
-      font-size: 0.85rem; color: var(--grey-500);
-      line-height: 1.6; margin-bottom: 1.25rem;
-    }
-    .xp-score-bar-label {
-      display: flex; justify-content: space-between;
-      font-size: 0.8rem; font-weight: 600;
-      color: var(--blue-700); margin-bottom: 0.4rem;
-    }
-    .xp-score-bar-track {
-      height: 8px; background: var(--grey-200);
-      border-radius: 100px; overflow: hidden;
-    }
-    .xp-score-bar-fill {
-      height: 100%; border-radius: 100px;
-      background: linear-gradient(90deg, var(--blue-500), var(--blue-300));
-      transition: width 1.5s ease;
-    }
-    .xp-hero-float-1 {
-      position: absolute; top: -20px; right: -20px; z-index: 3;
-      background: var(--white);
-      border-radius: 12px; padding: 0.75rem 1rem;
-      box-shadow: 0 8px 24px rgba(14,52,96,0.1);
-      font-size: 0.8rem; font-weight: 600; color: var(--blue-800);
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-    .xp-hero-float-2 {
-      position: absolute; bottom: -16px; left: -24px; z-index: 3;
-      background: var(--blue-500);
-      border-radius: 12px; padding: 0.75rem 1rem;
-      box-shadow: 0 8px 24px rgba(35,112,196,0.35);
-      font-size: 0.8rem; font-weight: 600; color: var(--white);
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-
-    /* ── Stats ── */
-    .xp-stats {
-      background: var(--blue-800);
-      padding: 3.5rem 5%;
-    }
-    .xp-stats-inner {
-      max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 2rem; text-align: center;
-    }
-    .xp-stat-num {
-      font-family: var(--font-display);
-      font-size: 2.8rem; font-weight: 800;
-      color: var(--white); line-height: 1;
-      margin-bottom: 0.4rem;
-    }
-    .xp-stat-num span { color: var(--accent); }
-    .xp-stat-label {
-      font-size: 0.9rem; color: var(--blue-300);
-      font-weight: 400; letter-spacing: 0.3px;
-    }
-
-    /* ── Features ── */
-    .xp-features {
-      padding: 6rem 5%;
-      background: var(--white);
-    }
-    .xp-section-tag {
-      font-family: var(--font-display);
-      font-size: 0.78rem; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase;
-      color: var(--blue-500);
-      margin-bottom: 0.75rem;
-    }
-    .xp-section-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      font-weight: 800; line-height: 1.15;
-      color: var(--blue-950);
-      letter-spacing: -1px;
-      margin-bottom: 1rem;
-    }
-    .xp-section-sub {
-      font-size: 1rem; color: var(--grey-500);
-      line-height: 1.7; max-width: 520px;
-    }
-    .xp-features-header { text-align: center; margin-bottom: 4rem; }
-    .xp-features-header .xp-section-sub { margin: 0 auto; }
-    .xp-features-grid {
-      max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 1.75rem;
-    }
-    .xp-feature-card {
-      background: var(--grey-100);
-      border-radius: 18px; padding: 2rem;
-      border: 1.5px solid transparent;
-      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-      cursor: default;
-    }
-    .xp-feature-card:hover {
-      border-color: var(--blue-300);
-      transform: translateY(-4px);
-      box-shadow: 0 16px 40px rgba(35,112,196,0.1);
-    }
-    .xp-feature-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.5rem; margin-bottom: 1.25rem;
-    }
-    .xp-feature-title {
-      font-family: var(--font-display);
-      font-weight: 700; font-size: 1.05rem;
-      color: var(--blue-900); margin-bottom: 0.6rem;
-    }
-    .xp-feature-desc {
-      font-size: 0.88rem; color: var(--grey-500);
-      line-height: 1.65;
-    }
-    .xp-feature-link {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      margin-top: 1.25rem;
-      font-size: 0.85rem; font-weight: 600;
-      color: var(--blue-500); text-decoration: none;
-      transition: gap 0.2s;
-    }
-    .xp-feature-link:hover { gap: 0.6rem; }
-
-    /* ── How it works ── */
-    .xp-how {
-      padding: 6rem 5%;
-      background: linear-gradient(180deg, #f4f9ff 0%, #eaf3ff 100%);
-    }
-    .xp-how-inner { max-width: 1100px; margin: 0 auto; }
-    .xp-how-header { text-align: center; margin-bottom: 4rem; }
-    .xp-how-header .xp-section-sub { margin: 0 auto; }
-    .xp-steps {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem; position: relative;
-    }
-    .xp-steps::before {
+    .xp-steps-wrap::before {
       content: '';
       position: absolute;
-      top: 36px; left: calc(12.5% + 24px); right: calc(12.5% + 24px);
+      top: 36px; left: 12%; right: 12%;
       height: 2px;
-      background: linear-gradient(90deg, var(--blue-300), var(--blue-500), var(--blue-300));
+      background: linear-gradient(90deg, #2563EB, #7C3AED);
       z-index: 0;
     }
-    .xp-step { text-align: center; position: relative; z-index: 1; }
-    .xp-step-num {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: var(--white);
-      border: 2.5px solid var(--blue-300);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 1.25rem;
-      font-family: var(--font-display);
-      font-weight: 800; font-size: 1.3rem;
-      color: var(--blue-500);
-      box-shadow: 0 4px 16px rgba(35,112,196,0.12);
-      transition: background 0.3s, border-color 0.3s;
-    }
-    .xp-step:hover .xp-step-num {
-      background: var(--blue-500);
-      border-color: var(--blue-500);
-      color: var(--white);
-    }
-    .xp-step-title {
-      font-family: var(--font-display);
-      font-weight: 700; font-size: 0.95rem;
-      color: var(--blue-900); margin-bottom: 0.5rem;
-    }
-    .xp-step-desc {
-      font-size: 0.83rem; color: var(--grey-500); line-height: 1.6;
-    }
 
-    /* ── Testimonials ── */
-    .xp-testimonials {
-      padding: 6rem 5%;
-      background: var(--white);
-    }
-    .xp-testimonials-header { text-align: center; margin-bottom: 4rem; }
-    .xp-testimonials-header .xp-section-sub { margin: 0 auto; }
-    .xp-testimonials-grid {
-      max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 1.75rem;
-    }
-    .xp-tcard {
-      background: var(--grey-100);
-      border-radius: 18px; padding: 2rem;
-      border: 1.5px solid var(--grey-200);
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .xp-tcard:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 40px rgba(35,112,196,0.08);
-    }
-    .xp-tcard-stars { color: var(--accent); font-size: 1rem; margin-bottom: 1rem; letter-spacing: 2px; }
-    .xp-tcard-quote {
-      font-size: 0.9rem; line-height: 1.7;
-      color: var(--blue-800); font-style: italic;
-      margin-bottom: 1.5rem;
-    }
-    .xp-tcard-footer { display: flex; align-items: center; gap: 0.75rem; }
-    .xp-tcard-avatar {
-      width: 40px; height: 40px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; font-weight: 700;
-      color: var(--white);
-    }
-    .xp-tcard-name { font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; color: var(--blue-900); }
-    .xp-tcard-role { font-size: 0.78rem; color: var(--grey-500); }
-
-    /* ── CTA Banner ── */
+    /* CTA banner dot grid */
     .xp-cta-banner {
-      margin: 0 5% 6rem;
-      background: linear-gradient(135deg, var(--blue-800) 0%, var(--blue-600) 100%);
-      border-radius: 24px;
-      padding: 4rem 3rem;
-      text-align: center;
-      position: relative; overflow: hidden;
+      position: relative;
+      overflow: hidden;
     }
     .xp-cta-banner::before {
       content: '';
-      position: absolute; inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(99,102,241,0.18) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
     }
-    .xp-cta-banner-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.8rem, 3vw, 2.4rem);
-      font-weight: 800; color: var(--white);
-      margin-bottom: 1rem; letter-spacing: -0.5px;
-      position: relative;
-    }
-    .xp-cta-banner-sub {
-      color: var(--blue-300); font-size: 1rem;
-      margin-bottom: 2rem; position: relative;
-    }
-    .xp-cta-banner-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; position: relative; }
-    .xp-btn-white {
-      background: var(--white); color: var(--blue-700);
-      padding: 0.85rem 2rem; border-radius: 10px;
-      font-family: var(--font-display); font-weight: 700; font-size: 1rem;
-      text-decoration: none;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .xp-btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-    .xp-btn-outline-white {
-      border: 2px solid rgba(255,255,255,0.4); color: var(--white);
-      padding: 0.85rem 1.75rem; border-radius: 10px;
-      font-family: var(--font-display); font-weight: 600; font-size: 1rem;
-      text-decoration: none;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .xp-btn-outline-white:hover { border-color: var(--white); background: rgba(255,255,255,0.08); }
+  `;
+  document.head.appendChild(style);
+};
 
-    /* ── Footer ── */
-    .xp-footer {
-      background: var(--blue-950);
-      padding: 4rem 5% 2rem;
-    }
-    .xp-footer-top {
-      max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 3rem; padding-bottom: 3rem;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .xp-footer-brand-name {
-      font-family: var(--font-display);
-      font-size: 1.4rem; font-weight: 800;
-      color: var(--white); margin-bottom: 0.75rem;
-    }
-    .xp-footer-brand-name span { color: var(--blue-400); }
-    .xp-footer-brand-desc {
-      font-size: 0.87rem; color: var(--grey-500);
-      line-height: 1.65; max-width: 280px;
-    }
-    .xp-footer-col-title {
-      font-family: var(--font-display);
-      font-weight: 700; font-size: 0.85rem;
-      color: var(--white); margin-bottom: 1.25rem;
-      letter-spacing: 0.3px;
-    }
-    .xp-footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
-    .xp-footer-links a {
-      font-size: 0.85rem; color: var(--grey-500);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .xp-footer-links a:hover { color: var(--blue-300); }
-    .xp-footer-bottom {
-      max-width: 1100px; margin: 0 auto;
-      padding-top: 2rem;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 1rem;
-    }
-    .xp-footer-copy { font-size: 0.82rem; color: var(--grey-500); }
-    .xp-footer-bottom-links { display: flex; gap: 1.5rem; }
-    .xp-footer-bottom-links a { font-size: 0.82rem; color: var(--grey-500); text-decoration: none; transition: color 0.2s; }
-    .xp-footer-bottom-links a:hover { color: var(--blue-300); }
-
-    /* ── Responsive ── */
-    @media (max-width: 900px) {
-      .xp-hero-inner { grid-template-columns: 1fr; }
-      .xp-hero-visual { display: none; }
-      .xp-stats-inner { grid-template-columns: repeat(2, 1fr); }
-      .xp-features-grid { grid-template-columns: repeat(2, 1fr); }
-      .xp-steps { grid-template-columns: repeat(2, 1fr); }
-      .xp-steps::before { display: none; }
-      .xp-testimonials-grid { grid-template-columns: 1fr; }
-      .xp-footer-top { grid-template-columns: 1fr 1fr; }
-      .xp-nav-links { display: none; }
-    }
-    @media (max-width: 600px) {
-      .xp-features-grid { grid-template-columns: 1fr; }
-      .xp-steps { grid-template-columns: 1fr; }
-      .xp-stats-inner { grid-template-columns: repeat(2, 1fr); }
-      .xp-footer-top { grid-template-columns: 1fr; }
-      .xp-cta-banner { margin: 0 0 4rem; border-radius: 0; }
-    }
-  `}</style>
-);
-
-// ── Data ─────────────────────────────────────────────────────────────────────
-const features = [
-  {
-    icon: "🎯", color: "#dbeeff", iconBg: "#dbeeff",
-    title: "AI Mock Interviews",
-    desc: "Practice with our AI interviewer that asks real questions, listens to your answers, and gives instant, detailed feedback using the STAR method.",
-    link: "/MockInterview", label: "Start Practicing"
-  },
-  {
-    icon: "📄", color: "#e8f5e9", iconBg: "#e8f5e9",
-    title: "AI Resume Builder",
-    desc: "Build an ATS-optimized resume in minutes. Our AI suggests impactful bullet points, relevant keywords, and formats for your target role.",
-    link: "/ResumeBuilder", label: "Build Resume"
-  },
-  {
-    icon: "💼", color: "#fff3e0", iconBg: "#fff3e0",
-    title: "AI Job Hunter",
-    desc: "Get matched with jobs that fit your skills, location, and salary expectations. Apply smarter, not harder.",
-    link: "/JobHunter", label: "Find Jobs"
-  },
-  {
-    icon: "📚", color: "#f3e5f5", iconBg: "#f3e5f5",
-    title: "Learning Modules",
-    desc: "Structured learning paths covering communication, aptitude, technical skills, and domain knowledge — all in one place.",
-    link: "/Modules", label: "Start Learning"
-  },
-  {
-    icon: "❓", color: "#e8eaf6", iconBg: "#e8eaf6",
-    title: "Question Bank",
-    desc: "10,000+ curated interview questions across industries, roles, and difficulty levels. Filter by company, topic, or experience.",
-    link: "/QuestionBank", label: "Browse Questions"
-  },
-  {
-    icon: "📊", color: "#e0f7fa", iconBg: "#e0f7fa",
-    title: "Progress Tracker",
-    desc: "Track your preparation score, interview performance trends, and readiness level with a personalised dashboard.",
-    link: "/", label: "Coming Soon"
-  }
+/* ── BEFORE ATTRIBUTES ─────────────────────────────────────── */
+const beforeAttrs = [
+  { icon: "❌", title: "No Interview Practice",  sub: "Zero experience with real interview formats or pressure",        delay: "0.05s" },
+  { icon: "📄", title: "Weak Resume",             sub: "Fails ATS filters, never reaches a human recruiter",            delay: "0.10s" },
+  { icon: "📉", title: "Skill Gaps",              sub: "Missing domain knowledge expected at entry level",              delay: "0.15s" },
+  { icon: "😟", title: "Low Confidence",          sub: "Nervous, blanks out under interview pressure",                  delay: "0.20s" },
+  { icon: "🔍", title: "No Job Leads",            sub: "Applying blindly with no smart matching or strategy",           delay: "0.25s" },
 ];
 
+/* ── AFTER ATTRIBUTES ──────────────────────────────────────── */
+const afterAttrs = [
+  { icon: "🎤", title: "Interview-Ready",         sub: "Practised 100+ AI mock sessions, sharp & confident",           delay: "0.05s" },
+  { icon: "✅", title: "ATS-Optimised Resume",    sub: "Gets past filters and lands in front of real recruiters",       delay: "0.10s" },
+  { icon: "📈", title: "Skills Certified",        sub: "Domain & aptitude skills verified and job-ready",              delay: "0.15s" },
+  { icon: "💪", title: "High Confidence",         sub: "Calm, articulate, and prepared for any question",              delay: "0.20s" },
+  { icon: "🎯", title: "Smart Job Matching",      sub: "AI matches you to the right roles and companies",              delay: "0.25s" },
+];
+
+/* ── TOOLS DATA ────────────────────────────────────────────── */
+const tools = [
+  { icon: "🎤", title: "Mock Interview",    desc: "Practice with an AI interviewer that adapts to your role and gives instant, detailed feedback on every answer.",         badge: "⭐ Most Popular",  badgeBg: "#EFF6FF", badgeColor: "#2563EB", cardBg: "#fff",                     link: "/MockInterview"  },
+  { icon: "📄", title: "Resume Builder",   desc: "Build ATS-optimised resumes that pass screening filters and land in front of real hiring managers.",                     badge: "✓ ATS-Ready",     badgeBg: "#F0FDF4", badgeColor: "#166534", cardBg: "#fff",                     link: "/ResumeBuilder"  },
+  { icon: "🔍", title: "Job Hunter",       desc: "Discover opportunities intelligently matched to your profile, skills, and career aspirations.",                          badge: "AI-Matched",       badgeBg: "#FDF4FF", badgeColor: "#7E22CE", cardBg: "#fff",                     link: "/JobHunter"      },
+  { icon: "📚", title: "Learning Modules", desc: "Structured, bite-sized courses in communication, domain knowledge, aptitude, and soft skills.",                          badge: "Structured",       badgeBg: "#FFF7ED", badgeColor: "#C2410C", cardBg: "#fff",                     link: "/Modules"        },
+  { icon: "❓", title: "Question Bank",    desc: "10,000+ curated questions across technical, HR, and behavioural categories with model answers.",                         badge: "10K+ Questions",   badgeBg: "#F0F9FF", badgeColor: "#0369A1", cardBg: "#fff",                     link: "/QuestionBank"   },
+  { icon: "🤖", title: "AI Career Coach", desc: "Get personalised advice on career paths, salary negotiation, and long-term growth strategy.",                            badge: "Coming Soon",      badgeBg: "#fff",    badgeColor: "#4338CA", cardBg: "linear-gradient(135deg,#EFF6FF,#F5F0FF)", link: null },
+];
+
+/* ── STEPS DATA ────────────────────────────────────────────── */
 const steps = [
-  { num: "01", title: "Create Your Profile", desc: "Tell us your background, target role, and experience level in 2 minutes." },
-  { num: "02", title: "Take AI Mock Interview", desc: "Answer real interview questions and get instant AI feedback on every response." },
-  { num: "03", title: "Build Your Resume", desc: "Use AI to craft an ATS-ready resume tailored to your dream job." },
-  { num: "04", title: "Land Your Dream Job", desc: "Apply to matched jobs with confidence and track your applications." }
+  { num: "1", title: "Create Profile",  desc: "Tell us your target role, industry, and current skill level." },
+  { num: "2", title: "Practice Daily",  desc: "AI mock interviews and skill modules tailored for you."       },
+  { num: "3", title: "Build Resume",    desc: "ATS-optimised resume crafted from your real experience."      },
+  { num: "4", title: "Get Hired",       desc: "Apply confidently and land your high-paying dream job."       },
 ];
 
+/* ── TESTIMONIALS DATA ─────────────────────────────────────── */
 const testimonials = [
   {
-    stars: "★★★★★",
-    quote: "xprep's AI mock interviews were a game changer. I practiced 20+ questions and got detailed feedback every time. Landed my first job at Infosys within 3 weeks!",
-    name: "Priya Sharma", role: "Software Engineer, Infosys", color: "#2370c4", initial: "P"
+    initials: "AR", avatarBg: "linear-gradient(135deg,#2563EB,#7C3AED)",
+    name: "Arjun Rao",    role: "Associate, Deloitte · ₹14 LPA",
+    text: "The AI mock interviews were a game-changer. I went from blanking out to speaking confidently. Got placed at Deloitte within 3 weeks!",
   },
   {
-    stars: "★★★★★",
-    quote: "The resume builder helped me create an ATS-friendly resume that actually got calls. Before xprep, I had zero responses for 2 months. Everything changed after.",
-    name: "Rahul Verma", role: "Data Analyst, TCS", color: "#1a8c6f", initial: "R"
+    initials: "PS", avatarBg: "linear-gradient(135deg,#059669,#06B6D4)",
+    name: "Priya Sharma",  role: "Analyst, KPMG · ₹11 LPA",
+    text: "My resume was getting rejected everywhere. Xprep rebuilt it and I started getting calls within days. Hired at KPMG in 5 weeks!",
   },
   {
-    stars: "★★★★★",
-    quote: "As a fresher from a tier-3 college, I felt lost. xprep gave me a structured path and the confidence to crack interviews at top MNCs. Highly recommend!",
-    name: "Anjali Singh", role: "Business Analyst, Wipro", color: "#7b3fbf", initial: "A"
-  }
+    initials: "RK", avatarBg: "linear-gradient(135deg,#F59E0B,#EF4444)",
+    name: "Rahul Kumar",   role: "Consultant, EY · ₹16 LPA",
+    text: "The Question Bank is incredibly thorough. Every interview question I faced, I had already practised. Landed a Big 4 offer!",
+  },
 ];
 
-const stats = [
-  { num: "50,000", suffix: "+", label: "Students Prepared" },
-  { num: "10,000", suffix: "+", label: "Interview Questions" },
-  { num: "85", suffix: "%", label: "Placement Rate" },
-  { num: "500", suffix: "+", label: "Companies Hiring" }
-];
+/* ═══════════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════════ */
+const Home = () => {
+  React.useEffect(() => { injectStyles(); }, []);
 
-// ── Component ─────────────────────────────────────────────────────────────────
-export default function Home() {
-  const [scrolled, setScrolled] = useState(false);
-  const [barWidth, setBarWidth] = useState(0);
-  const heroRef = useRef(null);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 30);
+  /* ── nav scroll shadow ── */
+  const [scrolled, setScrolled] = React.useState(false);
+  React.useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
-    // Trigger score bar animation after mount
-    setTimeout(() => setBarWidth(82), 800);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Trigger hero text animations
-  useEffect(() => {
-    const els = heroRef.current?.querySelectorAll(".xp-hero-title, .xp-hero-sub, .xp-hero-actions, .xp-hero-visual");
-    els?.forEach((el, i) => {
-      el.style.animationDelay = `${i * 0.15}s`;
-      el.classList.add("animate-fade-up");
-    });
-  }, []);
-
   return (
-    <>
-      <GlobalStyles />
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: T.white, color: T.navy, overflowX: "hidden" }}>
 
-      {/* ── NAV ── */}
-      <nav className={`xp-nav${scrolled ? " scrolled" : ""}`}>
-        <a href="/" className="xp-nav-logo">x<span>prep</span>.in</a>
-        <div className="xp-nav-links">
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How It Works</a>
-          <a href="#testimonials">Success Stories</a>
-          <Link to="/MockInterview" className="xp-nav-cta">Start Free →</Link>
+      {/* ══ NAVBAR ══════════════════════════════════════════ */}
+      <nav style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 60px", height: 68,
+        background: "rgba(255,255,255,0.97)",
+        backdropFilter: "blur(12px)",
+        borderBottom: `1px solid ${T.border}`,
+        position: "sticky", top: 0, zIndex: 200,
+        boxShadow: scrolled ? "0 2px 16px rgba(0,0,0,0.07)" : "none",
+        transition: "box-shadow .3s",
+      }}>
+        {/* Logo */}
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+          <div style={{
+            width: 36, height: 36,
+            background: `linear-gradient(135deg, ${T.blue}, ${T.purple})`,
+            borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg viewBox="0 0 20 20" width={20} height={20} fill="none">
+              <path d="M3 16L9 4L15 16" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5.5 11H14.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <span style={{ fontFamily: "'Sora', sans-serif", fontWeight: 800, fontSize: 22, color: T.blue }}>Xprep</span>
+        </a>
+
+        {/* Links */}
+        <ul style={{ display: "flex", gap: 36, listStyle: "none", margin: 0, padding: 0 }}>
+          {["Home", "AI Tools", "Modules", "Pricing"].map((l) => (
+            <li key={l}><a href={l === "Home" ? "/" : `/${l.replace(" ", "")}`} className="xp-nav-link">{l}</a></li>
+          ))}
+        </ul>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button className="xp-btn-ghost">Sign In</button>
+          <button className="xp-btn-nav">Get Started →</button>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section className="xp-hero" ref={heroRef}>
-        <div className="xp-hero-bg-circle xp-hero-bg-circle-1" />
-        <div className="xp-hero-bg-circle xp-hero-bg-circle-2" />
-        <div className="xp-hero-inner">
-          <div className="xp-hero-content">
-            <div className="xp-hero-badge">
-              <div className="xp-hero-badge-dot" />
-              AI-Powered Career Preparation Platform
-            </div>
-            <h1 className="xp-hero-title">
-              Land Your<br />
-              <span className="highlight">Dream Job</span><br />
-              With Confidence
-            </h1>
-            <p className="xp-hero-sub">
-              Practice real interviews with AI, build an ATS-ready resume, and get matched with top companies — everything a fresher needs, in one place.
-            </p>
-            <div className="xp-hero-actions">
-              <Link to="/MockInterview" className="xp-btn-primary">
-                Start Mock Interview <span>→</span>
-              </Link>
-              <Link to="/ResumeBuilder" className="xp-btn-secondary">
-                Build My Resume
-              </Link>
-            </div>
+      {/* ══ HERO ════════════════════════════════════════════ */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "280px 1fr 280px",
+        minHeight: "calc(100vh - 68px)",
+        background: "linear-gradient(150deg, #EFF6FF 0%, #FFFFFF 50%, #F5F0FF 100%)",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* grid bg */}
+        <div className="xp-grid-bg" />
+
+        {/* ── LEFT PANEL: BEFORE ───────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 24px", position: "relative", zIndex: 2 }}>
+          <div className="xp-divider-line" style={{ right: 0 }} />
+
+          {/* Pill */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            background: "#FEF2F2", border: "1.5px solid #FECACA",
+            borderRadius: 24, padding: "8px 16px",
+            fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 700,
+            color: T.red, marginBottom: 20, width: "fit-content",
+          }}>
+            😰 Before Xprep
           </div>
 
-          <div className="xp-hero-visual animate-float-a">
-            <div className="xp-hero-float-1 animate-float-b">
-              ✅ Interview Score: 82/100
-            </div>
-            <div className="xp-hero-card">
-              <div className="xp-hero-card-header">
-                <div className="xp-hero-card-avatar">🎓</div>
-                <div>
-                  <div className="xp-hero-card-name">AI Interview Coach</div>
-                  <div className="xp-hero-card-role">xprep.in • Live Session</div>
-                </div>
-              </div>
-              <div className="xp-hero-card-q">
-                "Tell me about yourself and why you're the right fit for this role?"
-              </div>
-              <div className="xp-hero-card-answer">
-                "I'm a recent Computer Science graduate with a passion for building scalable web applications. During my internship at..."
-              </div>
+          {/* Attribute cards – BAD */}
+          {beforeAttrs.map((a, i) => (
+            <div key={i} className="xp-attr-card bad" style={{ animationDelay: a.delay }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 9, background: "#FEF2F2",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, flexShrink: 0, marginTop: 1,
+              }}>{a.icon}</div>
               <div>
-                <div className="xp-score-bar-label">
-                  <span>Communication</span><span>82%</span>
-                </div>
-                <div className="xp-score-bar-track">
-                  <div className="xp-score-bar-fill" style={{ width: `${barWidth}%` }} />
-                </div>
+                <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 700, color: "#991B1B", marginBottom: 2 }}>{a.title}</div>
+                <div style={{ fontSize: 12, color: T.gray, lineHeight: 1.5 }}>{a.sub}</div>
               </div>
             </div>
-            <div className="xp-hero-float-2">
-              🎯 Job Match Found!
+          ))}
+
+          {/* Stat card */}
+          <div className="xp-stat-card-inner">
+            <div style={{ fontSize: 26 }}>📊</div>
+            <div>
+              <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 18, fontWeight: 800, color: T.red, lineHeight: 1 }}>87%</div>
+              <div style={{ fontSize: 12, color: T.gray, marginTop: 2 }}>freshers rejected in round 1</div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* ── STATS ── */}
-      <section className="xp-stats">
-        <div className="xp-stats-inner">
-          {stats.map((s, i) => (
-            <div key={i}>
-              <div className="xp-stat-num">{s.num}<span>{s.suffix}</span></div>
-              <div className="xp-stat-label">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section className="xp-features" id="features">
-        <div className="xp-features-header">
-          <div className="xp-section-tag">Everything You Need</div>
-          <h2 className="xp-section-title">Your Complete Career<br />Preparation Toolkit</h2>
-          <p className="xp-section-sub">Six powerful AI tools working together to take you from fresher to hired — faster than any coaching class.</p>
-        </div>
-        <div className="xp-features-grid">
-          {features.map((f, i) => (
-            <div className="xp-feature-card" key={i}>
-              <div className="xp-feature-icon" style={{ background: f.iconBg }}>
-                {f.icon}
-              </div>
-              <div className="xp-feature-title">{f.title}</div>
-              <div className="xp-feature-desc">{f.desc}</div>
-              <Link to={f.link} className="xp-feature-link">
-                {f.label} <span>→</span>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section className="xp-how" id="how-it-works">
-        <div className="xp-how-inner">
-          <div className="xp-how-header">
-            <div className="xp-section-tag">The Process</div>
-            <h2 className="xp-section-title">From Zero to Hired<br />in 4 Simple Steps</h2>
-            <p className="xp-section-sub">A clear, structured path designed specifically for freshers entering the job market.</p>
+        {/* ── CENTER ───────────────────────────────────────── */}
+        <div style={{
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          alignItems: "center", textAlign: "center",
+          padding: "60px 48px", position: "relative", zIndex: 5,
+        }}>
+          {/* Badge */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            background: T.blueLight, border: "1.5px solid #BFDBFE",
+            borderRadius: 24, padding: "8px 20px",
+            fontSize: 13, fontWeight: 600, color: T.blue, marginBottom: 30,
+          }}>
+            <span className="xp-badge-dot" />
+            AI-Powered Career Intelligence Platform
           </div>
-          <div className="xp-steps">
-            {steps.map((s, i) => (
-              <div className="xp-step" key={i}>
-                <div className="xp-step-num">{s.num}</div>
-                <div className="xp-step-title">{s.title}</div>
-                <div className="xp-step-desc">{s.desc}</div>
+
+          {/* H1 */}
+          <h1 style={{
+            fontFamily: "'Sora', sans-serif", fontSize: 54, fontWeight: 800,
+            lineHeight: 1.1, letterSpacing: "-1.5px", marginBottom: 22,
+          }}>
+            <span style={{ color: T.navy, display: "block" }}>Get Interview Ready.</span>
+            <span className="xp-h1-gradient" style={{ display: "block" }}>Career Ready.</span>
+          </h1>
+
+          {/* Subtitle */}
+          <p style={{ fontSize: 17, color: T.gray, lineHeight: 1.75, maxWidth: 390, margin: "0 auto 36px" }}>
+            Master interviews with AI-powered mock sessions, build ATS-ready resumes,
+            and land your dream job with intelligent career guidance.
+          </p>
+
+          {/* CTAs */}
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 44 }}>
+            <button className="xp-btn-hero" onClick={() => window.location.href = "/MockInterview"}>
+              Start Free Trial &nbsp;→
+            </button>
+            <button className="xp-btn-outline">
+              ▶ &nbsp;Watch Demo
+            </button>
+          </div>
+
+          {/* Stats band */}
+          <div style={{
+            display: "flex", width: "100%",
+            border: `1.5px solid ${T.border}`, borderRadius: 14,
+            overflow: "hidden", background: T.white,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+          }}>
+            {[
+              { num: "10K+",   lbl: "Jobs Secured"      },
+              { num: "3,436",  lbl: "Interviews Now"     },
+              { num: "49,928", lbl: "Interviews Today"   },
+            ].map((s, i, arr) => (
+              <div key={i} style={{
+                flex: 1, padding: "20px 12px", textAlign: "center",
+                borderRight: i < arr.length - 1 ? `1.5px solid ${T.border}` : "none",
+              }}>
+                <div className="xp-stat-num-gradient" style={{
+                  fontFamily: "'Sora', sans-serif", fontSize: 26, fontWeight: 800, lineHeight: 1, marginBottom: 4,
+                }}>{s.num}</div>
+                <div style={{ fontSize: 12, color: T.gray, fontWeight: 500 }}>{s.lbl}</div>
               </div>
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section className="xp-testimonials" id="testimonials">
-        <div className="xp-testimonials-header">
-          <div className="xp-section-tag">Success Stories</div>
-          <h2 className="xp-section-title">Freshers Who Made It</h2>
-          <p className="xp-section-sub">Real students. Real results. See how xprep helped them land their first job.</p>
+        {/* ── RIGHT PANEL: AFTER ───────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 24px", position: "relative", zIndex: 2 }}>
+          <div className="xp-divider-line" style={{ left: 0 }} />
+
+          {/* Pill */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            background: "#F0FDF4", border: "1.5px solid #A7F3D0",
+            borderRadius: 24, padding: "8px 16px",
+            fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 700,
+            color: T.green, marginBottom: 20, width: "fit-content",
+          }}>
+            🏆 After Xprep
+          </div>
+
+          {/* Attribute cards – GOOD */}
+          {afterAttrs.map((a, i) => (
+            <div key={i} className="xp-attr-card good" style={{ animationDelay: a.delay }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 9, background: "#F0FDF4",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, flexShrink: 0, marginTop: 1,
+              }}>{a.icon}</div>
+              <div>
+                <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 700, color: "#065F46", marginBottom: 2 }}>{a.title}</div>
+                <div style={{ fontSize: 12, color: T.gray, lineHeight: 1.5 }}>{a.sub}</div>
+              </div>
+            </div>
+          ))}
+
+          {/* Outcome badge */}
+          <div className="xp-outcome-badge">
+            <div style={{ fontSize: 28 }}>🎊</div>
+            <div>
+              <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 800, color: T.white, lineHeight: 1 }}>
+                ₹18 LPA — Offer Accepted!
+              </div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 3 }}>
+                Average salary jump: 3× for Xprep users
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="xp-testimonials-grid">
+      </div>
+
+      {/* ══ TRANSFORMATION STRIP ════════════════════════════ */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 18, padding: "20px 60px",
+        background: "linear-gradient(90deg, #EFF6FF, #F5F0FF)",
+        borderTop: "1px solid #DDE8FF", borderBottom: "1px solid #DDE8FF",
+      }}>
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: T.red, whiteSpace: "nowrap" }}>😰 Struggling Fresher</span>
+        <div style={{ display: "flex", alignItems: "center", flex: 1, maxWidth: 480, gap: 10 }}>
+          {/* Left line */}
+          <div style={{ flex: 1, height: 3, background: "linear-gradient(90deg,#FCA5A5,#93C5FD)", borderRadius: 2, position: "relative", overflow: "hidden" }}>
+            <span className="xp-shine" />
+          </div>
+          {/* Pill */}
+          <div style={{
+            background: `linear-gradient(135deg, ${T.blue}, ${T.purple})`,
+            color: T.white, borderRadius: 24, padding: "10px 24px",
+            fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 700,
+            boxShadow: "0 4px 18px rgba(99,60,220,0.35)", whiteSpace: "nowrap", flexShrink: 0,
+          }}>✦ &nbsp;Xprep AI &nbsp;✦</div>
+          {/* Right line */}
+          <div style={{ flex: 1, height: 3, background: "linear-gradient(90deg,#93C5FD,#6EE7B7)", borderRadius: 2, position: "relative", overflow: "hidden" }}>
+            <span className="xp-shine delay" />
+          </div>
+        </div>
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: T.green, whiteSpace: "nowrap" }}>🏆 Hired Professional</span>
+      </div>
+
+      {/* ══ AI TOOLS ════════════════════════════════════════ */}
+      <div style={{ padding: "80px 60px", background: T.white }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 36, fontWeight: 800, color: T.navy, marginBottom: 10 }}>
+            AI-Powered Interview Tools
+          </h2>
+          <p style={{ fontSize: 16, color: T.gray }}>Everything you need to ace your interviews and land your dream job</p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, maxWidth: 1000, margin: "0 auto" }}>
+          {tools.map((t, i) => (
+            <div
+              key={i}
+              className="xp-tool-card"
+              style={{ background: t.cardBg, borderColor: i === 5 ? "#C7D2FE" : T.border }}
+              onClick={() => t.link && (window.location.href = t.link)}
+            >
+              <div style={{
+                width: 50, height: 50, borderRadius: 12,
+                background: i === 5 ? T.white : t.badgeBg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 24, marginBottom: 16,
+              }}>{t.icon}</div>
+              <h3 style={{ fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 700, color: T.navy, marginBottom: 8 }}>{t.title}</h3>
+              <p style={{ fontSize: 13.5, color: T.gray, lineHeight: 1.65 }}>{t.desc}</p>
+              <div style={{
+                display: "inline-block", marginTop: 14, fontSize: 11.5, fontWeight: 600,
+                padding: "4px 12px", borderRadius: 20,
+                background: t.badgeBg, color: t.badgeColor,
+              }}>{t.badge}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ HOW IT WORKS ════════════════════════════════════ */}
+      <div style={{ padding: "80px 60px", background: "#F8FAFF" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 36, fontWeight: 800, color: T.navy, marginBottom: 10 }}>
+            How Xprep Works
+          </h2>
+          <p style={{ fontSize: 16, color: T.gray }}>From sign-up to dream job in 4 simple steps</p>
+        </div>
+
+        <div className="xp-steps-wrap" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 0, maxWidth: 960, margin: "0 auto" }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "0 16px", position: "relative", zIndex: 1 }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: "50%",
+                background: `linear-gradient(135deg, ${T.blue}, ${T.purple})`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "'Sora', sans-serif", fontSize: 26, fontWeight: 800, color: T.white,
+                marginBottom: 18, boxShadow: "0 6px 20px rgba(37,99,235,0.3)",
+              }}>{s.num}</div>
+              <h4 style={{ fontFamily: "'Sora', sans-serif", fontSize: 14, fontWeight: 700, color: T.navy, marginBottom: 6 }}>{s.title}</h4>
+              <p style={{ fontSize: 12.5, color: T.gray, lineHeight: 1.6 }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ TESTIMONIALS ════════════════════════════════════ */}
+      <div style={{ padding: "80px 60px", background: T.white }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 36, fontWeight: 800, color: T.navy, marginBottom: 10 }}>
+            Success Stories
+          </h2>
+          <p style={{ fontSize: 16, color: T.gray }}>Real professionals who transformed their careers with Xprep</p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 22, maxWidth: 960, margin: "0 auto" }}>
           {testimonials.map((t, i) => (
-            <div className="xp-tcard" key={i}>
-              <div className="xp-tcard-stars">{t.stars}</div>
-              <div className="xp-tcard-quote">"{t.quote}"</div>
-              <div className="xp-tcard-footer">
-                <div className="xp-tcard-avatar" style={{ background: t.color }}>{t.initial}</div>
+            <div key={i} className="xp-proof-card">
+              <div style={{ color: T.gold, fontSize: 14, marginBottom: 12, letterSpacing: 2 }}>★★★★★</div>
+              <p style={{ fontSize: 13.5, color: T.slate, lineHeight: 1.7, marginBottom: 16, fontStyle: "italic" }}>
+                "{t.text}"
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%",
+                  background: t.avatarBg,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 700,
+                  color: T.white, flexShrink: 0,
+                }}>{t.initials}</div>
                 <div>
-                  <div className="xp-tcard-name">{t.name}</div>
-                  <div className="xp-tcard-role">{t.role}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.navy }}>{t.name}</div>
+                  <div style={{ fontSize: 11.5, color: T.gray }}>{t.role}</div>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* ── CTA BANNER ── */}
-      <div className="xp-cta-banner">
-        <h2 className="xp-cta-banner-title">Ready to Land Your Dream Job?</h2>
-        <p className="xp-cta-banner-sub">Join 50,000+ freshers who are already preparing smarter with xprep.</p>
-        <div className="xp-cta-banner-actions">
-          <Link to="/MockInterview" className="xp-btn-white">Start Free Mock Interview →</Link>
-          <Link to="/QuestionBank" className="xp-btn-outline-white">Browse Question Bank</Link>
+      {/* ══ CTA BANNER ══════════════════════════════════════ */}
+      <div
+        className="xp-cta-banner"
+        style={{
+          padding: "80px 60px",
+          background: `linear-gradient(135deg, ${T.navy} 0%, ${T.slate} 60%, #1E1B4B 100%)`,
+          textAlign: "center",
+        }}
+      >
+        <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 42, fontWeight: 800, color: T.white, marginBottom: 14, position: "relative" }}>
+          Ready to Transform Your Career?
+        </h2>
+        <p style={{ fontSize: 17, color: "rgba(255,255,255,0.62)", marginBottom: 36, position: "relative" }}>
+          Join 10,000+ professionals who landed their dream jobs with Xprep
+        </p>
+        <button className="xp-btn-white" onClick={() => window.location.href = "/MockInterview"}>
+          Start Free Today &nbsp;→
+        </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 28, marginTop: 28, position: "relative" }}>
+          {["Free to start", "No credit card needed", "Cancel anytime"].map((txt, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+              ✓ &nbsp;{txt}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── FOOTER ── */}
-      <footer className="xp-footer">
-        <div className="xp-footer-top">
-          <div>
-            <div className="xp-footer-brand-name">x<span>prep</span>.in</div>
-            <div className="xp-footer-brand-desc">
-              India's smartest AI-powered career preparation platform, built for freshers and early-career professionals who want to compete and win.
-            </div>
-          </div>
-          <div>
-            <div className="xp-footer-col-title">Platform</div>
-            <ul className="xp-footer-links">
-              <li><Link to="/MockInterview">Mock Interview</Link></li>
-              <li><Link to="/ResumeBuilder">Resume Builder</Link></li>
-              <li><Link to="/JobHunter">Job Hunter</Link></li>
-              <li><Link to="/QuestionBank">Question Bank</Link></li>
-              <li><Link to="/Modules">Learning Modules</Link></li>
-            </ul>
-          </div>
-          <div>
-            <div className="xp-footer-col-title">Prepare For</div>
-            <ul className="xp-footer-links">
-              <li><a href="#features">Software Engineer</a></li>
-              <li><a href="#features">Data Analyst</a></li>
-              <li><a href="#features">Product Manager</a></li>
-              <li><a href="#features">Finance & CA</a></li>
-              <li><a href="#features">Marketing</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="xp-footer-col-title">Company</div>
-            <ul className="xp-footer-links">
-              <li><a href="#features">About Us</a></li>
-              <li><a href="#testimonials">Success Stories</a></li>
-              <li><a href="#how-it-works">How It Works</a></li>
-              <li><a href="mailto:hello@xprep.in">Contact</a></li>
-            </ul>
-          </div>
-        </div>
-        <div className="xp-footer-bottom">
-          <div className="xp-footer-copy">© 2026 xprep.in · All rights reserved · Made with ❤️ in India</div>
-          <div className="xp-footer-bottom-links">
-            <a href="#features">Privacy Policy</a>
-            <a href="#features">Terms of Service</a>
-          </div>
+      {/* ══ FOOTER ══════════════════════════════════════════ */}
+      <footer style={{
+        padding: "28px 60px",
+        background: "#070D1A",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexWrap: "wrap", gap: 16,
+      }}>
+        <div style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 18, color: T.white }}>⚡ Xprep</div>
+        <ul style={{ display: "flex", gap: 24, listStyle: "none", margin: 0, padding: 0 }}>
+          {["About", "Privacy Policy", "Terms", "Contact"].map((l) => (
+            <li key={l}><a href={`/${l.replace(" ", "")}`} className="xp-foot-link">{l}</a></li>
+          ))}
+        </ul>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", fontFamily: "'DM Sans', sans-serif" }}>
+          © 2026 Xprep.in · All rights reserved
         </div>
       </footer>
-    </>
+
+    </div>
   );
-}
+};
+
+export default Home;
