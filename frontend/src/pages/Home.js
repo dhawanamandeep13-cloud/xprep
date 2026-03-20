@@ -152,30 +152,101 @@ const injectStyles = () => {
     .xp-attr-card.good { border: 1.5px solid #D1FAE5; }
 
     .xp-tool-card {
-      background: #fff;
-      border: 1.5px solid #E2E8F0;
-      border-radius: 16px;
-      padding: 28px 24px;
+      border-radius: 22px;
+      padding: 32px 28px;
       cursor: pointer;
-      transition: border-color .25s, transform .25s, box-shadow .25s;
+      transition: transform .25s, box-shadow .25s;
       position: relative;
       overflow: hidden;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-    .xp-tool-card::after {
+    .xp-tool-card:hover { transform: translateY(-5px); }
+    .xp-tool-card::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #2563EB, #7C3AED);
-      opacity: 0;
-      transition: opacity .25s;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 22px 22px;
+      pointer-events: none;
     }
-    .xp-tool-card:hover {
-      border-color: #2563EB;
-      transform: translateY(-4px);
-      box-shadow: 0 14px 36px rgba(37,99,235,0.11);
+    .xp-tool-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 20px;
+      width: fit-content;
     }
-    .xp-tool-card:hover::after { opacity: 1; }
+    .xp-tool-icon {
+      width: 58px; height: 58px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin-bottom: 18px;
+    }
+    .xp-tool-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .xp-tool-stat {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .xp-tool-divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 16px; }
+    .xp-tool-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .xp-tool-cta:hover { background: rgba(255,255,255,0.18); }
+    .xp-tool-cta-arr {
+      width: 26px; height: 26px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      transition: transform .2s;
+    }
+    .xp-tool-card:hover .xp-tool-cta-arr { transform: translateX(3px); }
+    .xp-coming-soon-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10; border-radius: 22px;
+      background: rgba(0,0,0,0.25);
+    }
+    .xp-cs-pill {
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 24px; padding: 8px 20px;
+      font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700;
+      color: #fff; letter-spacing: 0.3px;
+    }
 
     .xp-proof-card {
       background: #fff;
@@ -337,12 +408,66 @@ const afterAttrs = [
 
 /* ── TOOLS DATA ────────────────────────────────────────────── */
 const tools = [
-  { icon: "🎤", title: "Mock Interview",    desc: "Practice with an AI interviewer that adapts to your role and gives instant, detailed feedback on every answer.",         badge: "⭐ Most Popular",  badgeBg: "#EFF6FF", badgeColor: "#2563EB", cardBg: "#fff",                     link: "/MockInterview"  },
-  { icon: "📄", title: "Resume Builder",   desc: "Build ATS-optimised resumes that pass screening filters and land in front of real hiring managers.",                     badge: "✓ ATS-Ready",     badgeBg: "#F0FDF4", badgeColor: "#166534", cardBg: "#fff",                     link: "/ResumeBuilder"  },
-  { icon: "🔍", title: "Job Hunter",       desc: "Discover opportunities intelligently matched to your profile, skills, and career aspirations.",                          badge: "AI-Matched",       badgeBg: "#FDF4FF", badgeColor: "#7E22CE", cardBg: "#fff",                     link: "/JobHunter"      },
-  { icon: "📚", title: "Learning Modules", desc: "Structured, bite-sized courses in communication, domain knowledge, aptitude, and soft skills.",                          badge: "Structured",       badgeBg: "#FFF7ED", badgeColor: "#C2410C", cardBg: "#fff",                     link: "/Modules"        },
-  { icon: "❓", title: "Question Bank",    desc: "10,000+ curated questions across technical, HR, and behavioural categories with model answers.",                         badge: "10K+ Questions",   badgeBg: "#F0F9FF", badgeColor: "#0369A1", cardBg: "#fff",                     link: "/QuestionBank"   },
-  { icon: "🤖", title: "AI Career Coach", desc: "Get personalised advice on career paths, salary negotiation, and long-term growth strategy.",                            badge: "Coming Soon",      badgeBg: "#fff",    badgeColor: "#4338CA", cardBg: "linear-gradient(135deg,#EFF6FF,#F5F0FF)", link: null },
+  {
+    icon: "🎤", title: "AI Mock Interview",
+    desc: "Practice with an AI interviewer that adapts to your role in real-time and gives detailed feedback on every answer.",
+    tag: "★ Most Popular", link: "/MockInterview", comingSoon: false,
+    grad: "linear-gradient(145deg,#0F172A 0%,#1E3A8A 60%,#312E81 100%)",
+    glow1: "rgba(99,102,241,0.5)", glow2: "rgba(59,130,246,0.6)",
+    hoverShadow: "rgba(49,46,129,0.35)",
+    stats: [{ num: "10K+", lbl: "Jobs Secured" }, { num: "49K+", lbl: "Sessions Today" }],
+    cta: "Start Practicing Free",
+  },
+  {
+    icon: "📄", title: "Resume Builder",
+    desc: "Build ATS-optimised resumes that pass every screening filter and land directly in front of real hiring managers.",
+    tag: "✓ ATS-Ready", link: "/ResumeBuilder", comingSoon: false,
+    grad: "linear-gradient(145deg,#052E16 0%,#065F46 55%,#0F766E 100%)",
+    glow1: "rgba(16,185,129,0.5)", glow2: "rgba(6,182,212,0.6)",
+    hoverShadow: "rgba(6,95,70,0.35)",
+    stats: [{ num: "3.2K+", lbl: "Resumes Built" }, { num: "94%", lbl: "ATS Pass Rate" }],
+    cta: "Build My Resume",
+  },
+  {
+    icon: "🔍", title: "Job Hunter",
+    desc: "Discover opportunities intelligently matched to your profile, skills, and career aspirations with precision AI.",
+    tag: "AI-Matched", link: "/JobHunter", comingSoon: false,
+    grad: "linear-gradient(145deg,#1E1B4B 0%,#4C1D95 55%,#6D28D9 100%)",
+    glow1: "rgba(167,139,250,0.5)", glow2: "rgba(236,72,153,0.5)",
+    hoverShadow: "rgba(109,40,217,0.35)",
+    stats: [{ num: "500+", lbl: "Companies" }, { num: "5K+", lbl: "Live Roles" }],
+    cta: "Find My Match",
+  },
+  {
+    icon: "📚", title: "Learning Modules",
+    desc: "Structured, bite-sized courses in communication, domain knowledge, aptitude, and essential soft skills.",
+    tag: "Structured", link: "/Modules", comingSoon: false,
+    grad: "linear-gradient(145deg,#1C1917 0%,#78350F 55%,#B45309 100%)",
+    glow1: "rgba(251,191,36,0.5)", glow2: "rgba(239,68,68,0.5)",
+    hoverShadow: "rgba(180,83,9,0.35)",
+    stats: [{ num: "120+", lbl: "Modules" }, { num: "8K+", lbl: "Learners" }],
+    cta: "Start Learning",
+  },
+  {
+    icon: "❓", title: "Question Bank",
+    desc: "10,000+ curated questions across technical, HR, and behavioural categories — all with detailed model answers.",
+    tag: "10K+ Questions", link: "/QuestionBank", comingSoon: false,
+    grad: "linear-gradient(145deg,#083344 0%,#0E7490 55%,#0284C7 100%)",
+    glow1: "rgba(56,189,248,0.5)", glow2: "rgba(37,99,235,0.5)",
+    hoverShadow: "rgba(14,116,144,0.35)",
+    stats: [{ num: "10K+", lbl: "Questions" }, { num: "15+", lbl: "Categories" }],
+    cta: "Explore Questions",
+  },
+  {
+    icon: "🤖", title: "AI Career Coach",
+    desc: "Get personalised advice on career paths, salary negotiation, and your long-term professional growth strategy.",
+    tag: "New", link: null, comingSoon: true,
+    grad: "linear-gradient(145deg,#1E1B4B 0%,#3730A3 50%,#4F46E5 100%)",
+    glow1: "rgba(129,140,248,0.4)", glow2: "rgba(99,102,241,0.4)",
+    hoverShadow: "rgba(79,70,229,0.3)",
+    stats: [{ num: "∞", lbl: "Advice Sessions" }, { num: "1:1", lbl: "Personalised" }],
+    cta: "Notify Me",
+  },
 ];
 
 /* ── STEPS DATA ────────────────────────────────────────────── */
@@ -622,35 +747,81 @@ const Home = () => {
       </div>
 
       {/* ══ AI TOOLS ════════════════════════════════════════ */}
-      <div style={{ padding: "80px 60px", background: T.white }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 36, fontWeight: 800, color: T.navy, marginBottom: 10 }}>
+      <div style={{ padding: "80px 60px", background: "#F8FAFF" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            background: T.white, border: "1.5px solid #BFDBFE",
+            borderRadius: 24, padding: "7px 18px",
+            fontSize: 12.5, fontWeight: 600, color: T.blue, marginBottom: 18,
+          }}>
+            <span className="xp-badge-dot" /> Powered by GPT-4
+          </div>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 40, fontWeight: 800, color: T.navy, letterSpacing: "-1.2px", marginBottom: 10 }}>
             AI-Powered Interview Tools
           </h2>
           <p style={{ fontSize: 16, color: T.gray }}>Everything you need to ace your interviews and land your dream job</p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, maxWidth: 1040, margin: "0 auto" }}>
           {tools.map((t, i) => (
             <div
               key={i}
               className="xp-tool-card"
-              style={{ background: t.cardBg, borderColor: i === 5 ? "#C7D2FE" : T.border }}
+              style={{
+                background: t.grad,
+                boxShadow: "none",
+                opacity: t.comingSoon ? 0.85 : 1,
+              }}
               onClick={() => t.link && (window.location.href = t.link)}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = `0 20px 60px ${t.hoverShadow}`}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}
             >
+              {/* glow orbs */}
               <div style={{
-                width: 50, height: 50, borderRadius: 12,
-                background: i === 5 ? T.white : t.badgeBg,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 24, marginBottom: 16,
-              }}>{t.icon}</div>
-              <h3 style={{ fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 700, color: T.navy, marginBottom: 8 }}>{t.title}</h3>
-              <p style={{ fontSize: 13.5, color: T.gray, lineHeight: 1.65 }}>{t.desc}</p>
+                position: "absolute", top: -50, right: -50,
+                width: 180, height: 180, borderRadius: "50%",
+                background: `radial-gradient(circle, ${t.glow1} 0%, transparent 70%)`,
+                opacity: 0.5, pointerEvents: "none",
+              }} />
               <div style={{
-                display: "inline-block", marginTop: 14, fontSize: 11.5, fontWeight: 600,
-                padding: "4px 12px", borderRadius: 20,
-                background: t.badgeBg, color: t.badgeColor,
-              }}>{t.badge}</div>
+                position: "absolute", bottom: -40, left: -40,
+                width: 140, height: 140, borderRadius: "50%",
+                background: `radial-gradient(circle, ${t.glow2} 0%, transparent 70%)`,
+                opacity: 0.3, pointerEvents: "none",
+              }} />
+
+              {/* coming soon overlay */}
+              {t.comingSoon && (
+                <div className="xp-coming-soon-overlay">
+                  <div className="xp-cs-pill">✦ Coming Soon</div>
+                </div>
+              )}
+
+              {/* card top */}
+              <div style={{ position: "relative", zIndex: 2 }}>
+                <div className="xp-tool-tag">{t.tag}</div>
+                <div className="xp-tool-icon">{t.icon}</div>
+                <h3 style={{ fontFamily: "'Sora', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff", lineHeight: 1.2, marginBottom: 10, letterSpacing: "-0.3px" }}>{t.title}</h3>
+                <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.62)", lineHeight: 1.7, marginBottom: 20 }}>{t.desc}</p>
+                <div className="xp-tool-stats">
+                  {t.stats.map((s, j) => (
+                    <div key={j} className="xp-tool-stat">
+                      <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 20, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.num}</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginTop: 3 }}>{s.lbl}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* card bottom */}
+              <div style={{ position: "relative", zIndex: 2 }}>
+                <div className="xp-tool-divider" />
+                <button className="xp-tool-cta" onClick={e => { e.stopPropagation(); t.link && (window.location.href = t.link); }}>
+                  {t.cta}
+                  <div className="xp-tool-cta-arr">→</div>
+                </button>
+              </div>
             </div>
           ))}
         </div>
