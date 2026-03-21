@@ -275,7 +275,7 @@ const ResumeBuilder = () => {
     }
   };
 
-  const useSuggestion = (field, value) => {
+  const applySuggestion = (field, value) => {
     handleChange(field, typeof value === 'string' ? value : JSON.stringify(value));
     setSuggestions(prev => ({ ...prev, [field]: null }));
   };
@@ -493,7 +493,7 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.summary}
-                      onUse={() => useSuggestion('summary', suggestions.summary)}
+                      onUse={() => applySuggestion('summary', suggestions.summary)}
                       onDismiss={() => dismissSuggestion('summary')}
                     />
                   </CardContent>
@@ -522,7 +522,7 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.experience}
-                      onUse={() => useSuggestion('experience', suggestions.experience)}
+                      onUse={() => applySuggestion('experience', suggestions.experience)}
                       onDismiss={() => dismissSuggestion('experience')}
                     />
                   </CardContent>
@@ -551,7 +551,7 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.education}
-                      onUse={() => useSuggestion('education', suggestions.education)}
+                      onUse={() => applySuggestion('education', suggestions.education)}
                       onDismiss={() => dismissSuggestion('education')}
                     />
                   </CardContent>
@@ -580,7 +580,7 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.skills}
-                      onUse={() => useSuggestion('skills', suggestions.skills)}
+                      onUse={() => applySuggestion('skills', suggestions.skills)}
                       onDismiss={() => dismissSuggestion('skills')}
                     />
                   </CardContent>
