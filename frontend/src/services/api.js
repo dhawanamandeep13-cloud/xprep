@@ -77,7 +77,7 @@ const APIService = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        resume_content: resumeContent,
+        resume_content: { text: resumeContent },
         target_role: targetRole,
       }),
     });
