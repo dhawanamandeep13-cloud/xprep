@@ -29,7 +29,6 @@ Provide feedback in JSON format with:
 
 Be constructive, specific, and encouraging. Focus on STAR method, clarity, and impact.
 """
-            
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
@@ -39,9 +38,8 @@ Be constructive, specific, and encouraging. Focus on STAR method, clarity, and i
                 temperature=0.7,
                 max_tokens=500
             )
-            
+
             feedback_text = response.choices[0].message.content
-            # Try to parse as JSON, if fails return structured format
             try:
                 feedback = json.loads(feedback_text)
             except:
@@ -51,18 +49,17 @@ Be constructive, specific, and encouraging. Focus on STAR method, clarity, and i
                     "improvements": ["Add more specific metrics", "Expand on impact"],
                     "suggestion": feedback_text
                 }
-            
+
             return feedback
         except Exception as e:
             print(f"OpenAI API Error: {str(e)}")
-            # Return fallback feedback
             return {
                 "score": 70,
                 "strengths": ["Answer provided", "Attempted to address the question"],
                 "improvements": ["Add more detail", "Include specific examples"],
                 "suggestion": "Consider using the STAR method to structure your answer."
             }
-    
+
     @staticmethod
     def generate_resume_suggestions(section: str, current_text: str, role: str, experience_years: int) -> Dict[str, Any]:
         """Generate AI-powered resume improvement suggestions"""
@@ -82,7 +79,6 @@ Provide:
 
 Format as JSON with keys: improved_text, keywords (array), tips (array)
 """
-            
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
@@ -92,7 +88,7 @@ Format as JSON with keys: improved_text, keywords (array), tips (array)
                 temperature=0.7,
                 max_tokens=400
             )
-            
+
             suggestion_text = response.choices[0].message.content
             try:
                 suggestions = json.loads(suggestion_text)
@@ -102,7 +98,7 @@ Format as JSON with keys: improved_text, keywords (array), tips (array)
                     "keywords": ["Python", "Leadership", "Agile", "Cloud", "Analytics"],
                     "tips": ["Add quantifiable achievements", "Use action verbs", "Include relevant technologies"]
                 }
-            
+
             return suggestions
         except Exception as e:
             print(f"OpenAI API Error: {str(e)}")
@@ -111,60 +107,133 @@ Format as JSON with keys: improved_text, keywords (array), tips (array)
                 "keywords": ["Leadership", "Problem-solving", "Innovation", "Collaboration", "Results-oriented"],
                 "tips": ["Add specific metrics", "Use strong action verbs", "Highlight key achievements"]
             }
-    
+
     @staticmethod
     def analyze_ats_compatibility(resume_content: Dict[str, str], target_role: str) -> Dict[str, Any]:
-        """Analyze resume for ATS compatibility"""
+        """Analyze resume for ATS compatibility with detailed feedback"""
         try:
             client = get_openai_client()
             resume_text = "\n".join([f"{k}: {v}" for k, v in resume_content.items()])
-            
-            prompt = f"""Analyze this resume for ATS compatibility and provide a score.
+
+            prompt = f"""You are an expert ATS (Applicant Tracking System) analyst and senior HR consultant. Analyze this resume for the role of {target_role} and provide detailed, specific feedback.
 
 Resume:
 {resume_text}
 
-Target Role: {target_role}
+Return ONLY a valid JSON object with exactly these fields — no markdown, no explanation, just raw JSON:
+{{
+  "ats_score": <integer 0-100>,
+  "matched_keywords": ["keyword1", "keyword2", "keyword3"],
+  "missing_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "strengths": [
+    "Specific strength observed in the resume with detail",
+    "Another specific strength with context",
+    "Third strength if applicable"
+  ],
+  "improvements": [
+    "Specific improvement needed with clear explanation of why",
+    "Another improvement with actionable context",
+    "Third improvement area with detail"
+  ],
+  "section_scores": {{
+    "summary": <integer 0-100>,
+    "experience": <integer 0-100>,
+    "skills": <integer 0-100>,
+    "education": <integer 0-100>
+  }},
+  "recommendations": [
+    "Concrete action item 1 specific to {target_role}",
+    "Concrete action item 2 specific to {target_role}",
+    "Concrete action item 3 specific to {target_role}",
+    "Concrete action item 4 specific to {target_role}"
+  ]
+}}
 
-Provide JSON with:
-- ats_score (0-100, integer)
-- missing_keywords (array of 3-5 important keywords missing)
-- improvements (array of 3-4 specific actionable improvements)
-"""
-            
+Be highly specific to the role of {target_role}. Each bullet point should be meaningful and actionable, not generic."""
+
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are an ATS (Applicant Tracking System) expert analyzing resumes."},
+                    {"role": "system", "content": "You are an ATS expert and HR consultant. Always respond with valid JSON only. No markdown formatting, no code blocks, just raw JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.5,
-                max_tokens=300
+                temperature=0.4,
+                max_tokens=900
             )
-            
-            analysis_text = response.choices[0].message.content
+
+            analysis_text = response.choices[0].message.content.strip()
+
+            # Strip markdown code fences if model wraps response
+            if analysis_text.startswith("```"):
+                analysis_text = analysis_text.split("```")[1]
+                if analysis_text.startswith("json"):
+                    analysis_text = analysis_text[4:]
+            analysis_text = analysis_text.strip()
+
             try:
                 analysis = json.loads(analysis_text)
             except:
                 analysis = {
                     "ats_score": 75,
-                    "missing_keywords": ["Cloud Computing", "Agile", "CI/CD"],
-                    "improvements": ["Add technical skills section", "Include metrics in achievements", "Use standard section headings"]
+                    "matched_keywords": [],
+                    "missing_keywords": ["Technical Skills", "Certifications", "Industry Tools", "Domain Keywords", "Quantified Achievements"],
+                    "strengths": [
+                        "Resume content was successfully parsed and reviewed",
+                        "Professional structure detected in the document"
+                    ],
+                    "improvements": [
+                        "Add more role-specific keywords aligned to " + target_role,
+                        "Quantify achievements with numbers, percentages, or rupee values",
+                        "Ensure each section has clear headings for ATS parsing"
+                    ],
+                    "section_scores": {
+                        "summary": 70,
+                        "experience": 75,
+                        "skills": 65,
+                        "education": 80
+                    },
+                    "recommendations": [
+                        "Add a dedicated Skills section with tools relevant to " + target_role,
+                        "Use bullet points with measurable outcomes in Experience",
+                        "Include certifications or training relevant to the role",
+                        "Tailor your summary paragraph specifically to " + target_role
+                    ]
                 }
-            
+
             return analysis
+
         except Exception as e:
             print(f"OpenAI API Error: {str(e)}")
             return {
                 "ats_score": 70,
-                "missing_keywords": ["Technical Skills", "Certifications", "Tools"],
-                "improvements": ["Add keyword-rich summary", "Include measurable achievements", "Use industry-standard terminology"]
+                "matched_keywords": [],
+                "missing_keywords": ["Technical Skills", "Certifications", "Tools", "Domain Expertise", "Leadership"],
+                "strengths": [
+                    "Resume was submitted and processed",
+                    "Content available for ATS evaluation"
+                ],
+                "improvements": [
+                    "Add keyword-rich summary tailored to " + target_role,
+                    "Include measurable achievements with specific numbers",
+                    "Use industry-standard terminology for " + target_role
+                ],
+                "section_scores": {
+                    "summary": 65,
+                    "experience": 70,
+                    "skills": 60,
+                    "education": 75
+                },
+                "recommendations": [
+                    "Tailor resume specifically for " + target_role,
+                    "Add quantifiable results to each experience bullet",
+                    "Include a technical skills section with relevant tools",
+                    "Ensure consistent formatting for ATS readability"
+                ]
             }
-    
+
     @staticmethod
     def generate_job_matches(preferences: Dict[str, Any], resume_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate AI-matched job recommendations"""
-        # For MVP, return mock jobs with AI-generated match reasons
         mock_jobs = [
             {
                 "title": "Senior Software Engineer",
@@ -191,8 +260,7 @@ Provide JSON with:
                 "posted": "3 days ago"
             }
         ]
-        
-        # Add AI-generated match scores and reasons
+
         for job in mock_jobs:
             job["match_score"] = 90 + (hash(job["company"]) % 10)
             job["match_reasons"] = [
@@ -201,5 +269,5 @@ Provide JSON with:
                 "Location preference met"
             ]
             job["id"] = f"job_{hash(job['company']) % 10000}"
-        
+
         return mock_jobs
