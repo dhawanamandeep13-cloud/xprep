@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
-from backend.openai_service import OpenAIService
+from openai_service import OpenAIService
 
 router = APIRouter()
 
