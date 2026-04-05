@@ -5,13 +5,9 @@ from openai_service import OpenAIService
 
 router = APIRouter()
 
-
-# ─── Request Models ────────────────────────────────────────────────────────────
-
 class ATSAnalysisRequest(BaseModel):
-    resume_content: Dict[str, str]   # e.g. {"text": "full resume text here"}
+    resume_content: Dict[str, str]
     target_role: str
-
 
 class ResumeSuggestionRequest(BaseModel):
     section: str
@@ -19,16 +15,8 @@ class ResumeSuggestionRequest(BaseModel):
     role: str
     experience_years: Optional[int] = 0
 
-
-# ─── Endpoints ─────────────────────────────────────────────────────────────────
-
 @router.post("/analyze-ats")
 async def analyze_ats(request: ATSAnalysisRequest):
-    """
-    Analyze resume for ATS compatibility.
-    Returns detailed score, matched/missing keywords, strengths,
-    improvements, section scores, and recommendations.
-    """
     try:
         result = OpenAIService.analyze_ats_compatibility(
             resume_content=request.resume_content,
@@ -38,13 +26,8 @@ async def analyze_ats(request: ATSAnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.post("/generate-suggestions")
 async def generate_suggestions(request: ResumeSuggestionRequest):
-    """
-    Generate AI-powered suggestions for a specific resume section.
-    Returns improved_text, keywords, and tips.
-    """
     try:
         result = OpenAIService.generate_resume_suggestions(
             section=request.section,
@@ -55,3 +38,4 @@ async def generate_suggestions(request: ResumeSuggestionRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+"@
