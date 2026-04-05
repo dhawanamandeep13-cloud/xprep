@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from openai_service import OpenAIService
 
-router = APIRouter()
+router = APIRouter(prefix="/resume", tags=["resume"])
 
 class ATSAnalysisRequest(BaseModel):
     resume_content: Dict[str, str]
