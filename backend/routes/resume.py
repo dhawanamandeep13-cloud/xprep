@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+﻿from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from openai_service import OpenAIService
@@ -38,4 +38,3 @@ async def generate_suggestions(request: ResumeSuggestionRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-"@
