@@ -30,7 +30,7 @@ Provide feedback in JSON format with:
 Be constructive, specific, and encouraging. Focus on STAR method, clarity, and impact.
 """
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert interview coach providing constructive feedback."},
                     {"role": "user", "content": prompt}
@@ -80,7 +80,7 @@ Provide:
 Format as JSON with keys: improved_text, keywords (array), tips (array)
 """
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a professional resume writer specializing in ATS optimization."},
                     {"role": "user", "content": prompt}
@@ -152,7 +152,7 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ex
 Be highly specific to the role of {target_role}. Each bullet point should be meaningful and actionable, not generic."""
 
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an ATS expert and HR consultant. Always respond with valid JSON only. No markdown formatting, no code blocks, just raw JSON."},
                     {"role": "user", "content": prompt}
