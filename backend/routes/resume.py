@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from openai_service import OpenAIService
@@ -11,7 +11,7 @@ class ATSAnalysisRequest(BaseModel):
 
 class ResumeSuggestionRequest(BaseModel):
     section: str
-    current_text: Optional[str] = ""
+    current_text: Optional[str] = `"
     role: str
     experience_years: Optional[int] = 0
 
