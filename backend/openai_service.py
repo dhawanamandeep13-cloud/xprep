@@ -14,7 +14,7 @@ def get_gemini_client():
 def call_gemini(prompt: str) -> str:
     client = get_gemini_client()
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-1.5-flash-latest',
         contents=prompt
     )
     text = response.text.strip()
