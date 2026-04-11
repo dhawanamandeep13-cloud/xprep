@@ -1,58 +1,56 @@
 import os
 import json
-from openai import OpenAI
+import google.generativeai as genai
 from typing import Dict, List, Any
 
-def get_openai_client():
-    """Get OpenAI client instance with API key"""
-    api_key = os.environ.get('OPENAI_API_KEY')
+
+def get_gemini_model():
+    api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
-        raise ValueError("OPENAI_API_KEY not found in environment variables")
-    return OpenAI(api_key=api_key)
+        raise ValueError("GEMINI_API_KEY not found in environment variables")
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel('gemini-1.5-flash')
+
 
 class OpenAIService:
+
     @staticmethod
     def generate_interview_feedback(question: str, answer: str) -> Dict[str, Any]:
-        """Generate AI-powered interview feedback"""
         try:
-            client = get_openai_client()
+            model = get_gemini_model()
             prompt = f"""You are an expert interview coach. Analyze this interview answer and provide constructive feedback.
 
 Question: {question}
 Answer: {answer}
 
-Provide feedback in JSON format with:
-- score (0-100, integer)
-- strengths (array of 2-3 specific points)
-- improvements (array of 2-3 actionable suggestions)
-- suggestion (one paragraph of detailed advice)
+Respond ONLY with a valid JSON object, no markdown, no explanation:
+{{
+  "score": <integer 0-100>,
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "improvements": ["actionable suggestion 1", "actionable suggestion 2"],
+  "suggestion": "one paragraph of detailed advice"
+}}"""
 
-Be constructive, specific, and encouraging. Focus on STAR method, clarity, and impact.
-"""
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an expert interview coach providing constructive feedback."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
+            response = model.generate_content(prompt)
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            text = text.strip()
 
-            feedback_text = response.choices[0].message.content
             try:
-                feedback = json.loads(feedback_text)
+                return json.loads(text)
             except:
-                feedback = {
+                return {
                     "score": 75,
                     "strengths": ["Clear communication", "Relevant examples"],
                     "improvements": ["Add more specific metrics", "Expand on impact"],
-                    "suggestion": feedback_text
+                    "suggestion": text
                 }
 
-            return feedback
         except Exception as e:
-            print(f"OpenAI API Error: {str(e)}")
+            print(f"Gemini API Error: {str(e)}")
             return {
                 "score": 70,
                 "strengths": ["Answer provided", "Attempted to address the question"],
@@ -62,9 +60,8 @@ Be constructive, specific, and encouraging. Focus on STAR method, clarity, and i
 
     @staticmethod
     def generate_resume_suggestions(section: str, current_text: str, role: str, experience_years: int) -> Dict[str, Any]:
-        """Generate AI-powered resume improvement suggestions"""
         try:
-            client = get_openai_client()
+            model = get_gemini_model()
             prompt = f"""You are a professional resume writer and ATS expert. Improve this resume section.
 
 Section: {section}
@@ -72,36 +69,32 @@ Current text: {current_text}
 Target role: {role}
 Experience: {experience_years} years
 
-Provide:
-1. Improved text (2-3 sentences, ATS-friendly, quantifiable, impactful)
-2. Top 5 relevant keywords for this role
-3. 2-3 specific tips for improvement
+Respond ONLY with a valid JSON object, no markdown, no explanation:
+{{
+  "improved_text": "2-3 sentences, ATS-friendly, quantifiable, impactful",
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "tips": ["specific tip 1", "specific tip 2", "specific tip 3"]
+}}"""
 
-Format as JSON with keys: improved_text, keywords (array), tips (array)
-"""
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a professional resume writer specializing in ATS optimization."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=400
-            )
+            response = model.generate_content(prompt)
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            text = text.strip()
 
-            suggestion_text = response.choices[0].message.content
             try:
-                suggestions = json.loads(suggestion_text)
+                return json.loads(text)
             except:
-                suggestions = {
-                    "improved_text": suggestion_text,
-                    "keywords": ["Python", "Leadership", "Agile", "Cloud", "Analytics"],
+                return {
+                    "improved_text": text,
+                    "keywords": ["Leadership", "Strategy", "Finance", "Analytics", "Compliance"],
                     "tips": ["Add quantifiable achievements", "Use action verbs", "Include relevant technologies"]
                 }
 
-            return suggestions
         except Exception as e:
-            print(f"OpenAI API Error: {str(e)}")
+            print(f"Gemini API Error: {str(e)}")
             return {
                 "improved_text": "Results-driven professional with proven track record of delivering high-impact solutions.",
                 "keywords": ["Leadership", "Problem-solving", "Innovation", "Collaboration", "Results-oriented"],
@@ -110,17 +103,16 @@ Format as JSON with keys: improved_text, keywords (array), tips (array)
 
     @staticmethod
     def analyze_ats_compatibility(resume_content: Dict[str, str], target_role: str) -> Dict[str, Any]:
-        """Analyze resume for ATS compatibility with detailed feedback"""
         try:
-            client = get_openai_client()
+            model = get_gemini_model()
             resume_text = "\n".join([f"{k}: {v}" for k, v in resume_content.items()])
 
-            prompt = f"""You are an expert ATS (Applicant Tracking System) analyst and senior HR consultant. Analyze this resume for the role of {target_role} and provide detailed, specific feedback.
+            prompt = f"""You are an expert ATS analyst and senior HR consultant. Analyze this resume for the role of {target_role}.
 
 Resume:
 {resume_text}
 
-Return ONLY a valid JSON object with exactly these fields — no markdown, no explanation, just raw JSON:
+Respond ONLY with a valid JSON object, no markdown, no explanation:
 {{
   "ats_score": <integer 0-100>,
   "matched_keywords": ["keyword1", "keyword2", "keyword3"],
@@ -131,7 +123,7 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ex
     "Third strength if applicable"
   ],
   "improvements": [
-    "Specific improvement needed with clear explanation of why",
+    "Specific improvement needed with clear explanation",
     "Another improvement with actionable context",
     "Third improvement area with detail"
   ],
@@ -149,31 +141,20 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ex
   ]
 }}
 
-Be highly specific to the role of {target_role}. Each bullet point should be meaningful and actionable, not generic."""
+Be highly specific to the role of {target_role}. Each point must be meaningful and actionable."""
 
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an ATS expert and HR consultant. Always respond with valid JSON only. No markdown formatting, no code blocks, just raw JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.4,
-                max_tokens=900
-            )
-
-            analysis_text = response.choices[0].message.content.strip()
-
-            # Strip markdown code fences if model wraps response
-            if analysis_text.startswith("```"):
-                analysis_text = analysis_text.split("```")[1]
-                if analysis_text.startswith("json"):
-                    analysis_text = analysis_text[4:]
-            analysis_text = analysis_text.strip()
+            response = model.generate_content(prompt)
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            text = text.strip()
 
             try:
-                analysis = json.loads(analysis_text)
+                return json.loads(text)
             except:
-                analysis = {
+                return {
                     "ats_score": 75,
                     "matched_keywords": [],
                     "missing_keywords": ["Technical Skills", "Certifications", "Industry Tools", "Domain Keywords", "Quantified Achievements"],
@@ -200,10 +181,8 @@ Be highly specific to the role of {target_role}. Each bullet point should be mea
                     ]
                 }
 
-            return analysis
-
         except Exception as e:
-            print(f"OpenAI API Error: {str(e)}")
+            print(f"Gemini API Error: {str(e)}")
             return {
                 "ats_score": 70,
                 "matched_keywords": [],
@@ -233,13 +212,12 @@ Be highly specific to the role of {target_role}. Each bullet point should be mea
 
     @staticmethod
     def generate_job_matches(preferences: Dict[str, Any], resume_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Generate AI-matched job recommendations"""
         mock_jobs = [
             {
                 "title": "Senior Software Engineer",
                 "company": "Google",
                 "location": preferences.get("location", "Bangalore"),
-                "salary": "₹30-45 LPA",
+                "salary": "30-45 LPA",
                 "job_type": "Full-time",
                 "posted": "2 days ago"
             },
@@ -247,7 +225,7 @@ Be highly specific to the role of {target_role}. Each bullet point should be mea
                 "title": "Product Manager",
                 "company": "Microsoft",
                 "location": "Hyderabad",
-                "salary": "₹25-40 LPA",
+                "salary": "25-40 LPA",
                 "job_type": "Full-time",
                 "posted": "1 week ago"
             },
@@ -255,7 +233,7 @@ Be highly specific to the role of {target_role}. Each bullet point should be mea
                 "title": "Data Scientist",
                 "company": "Amazon",
                 "location": "Bangalore",
-                "salary": "₹28-42 LPA",
+                "salary": "28-42 LPA",
                 "job_type": "Full-time",
                 "posted": "3 days ago"
             }
