@@ -5,4 +5,4 @@ motor
 pydantic
 openai
 httpx
-google-genai
+google-generativeai==0.7.2

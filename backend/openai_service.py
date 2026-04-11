@@ -1,22 +1,16 @@
 import os
 import json
-from google import genai
+import google.generativeai as genai
 from typing import Dict, List, Any
 
 
-def get_gemini_client():
+def call_gemini(prompt: str) -> str:
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
-    return genai.Client(api_key=api_key)
-
-
-def call_gemini(prompt: str) -> str:
-    client = get_gemini_client()
-    response = client.models.generate_content(
-       model='models/gemini-1.5-flash',
-        contents=prompt
-    )
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(prompt)
     text = response.text.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
