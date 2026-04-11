@@ -3,7 +3,7 @@ import json
 import httpx
 from typing import Dict, List, Any
 
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
 
 
 def call_gemini(prompt: str) -> str:
