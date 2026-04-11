@@ -1,15 +1,28 @@
 import os
 import json
-import google.generativeai as genai
+from google import genai
 from typing import Dict, List, Any
 
 
-def get_gemini_model():
+def get_gemini_client():
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-pro')
+    return genai.Client(api_key=api_key)
+
+
+def call_gemini(prompt: str) -> str:
+    client = get_gemini_client()
+    response = client.models.generate_content(
+        model='gemini-2.0-flash',
+        contents=prompt
+    )
+    text = response.text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return text.strip()
 
 
 class OpenAIService:
@@ -17,7 +30,6 @@ class OpenAIService:
     @staticmethod
     def generate_interview_feedback(question: str, answer: str) -> Dict[str, Any]:
         try:
-            model = get_gemini_model()
             prompt = f"""You are an expert interview coach. Analyze this interview answer and provide constructive feedback.
 
 Question: {question}
@@ -31,14 +43,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
   "suggestion": "one paragraph of detailed advice"
 }}"""
 
-            response = model.generate_content(prompt)
-            text = response.text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            text = text.strip()
-
+            text = call_gemini(prompt)
             try:
                 return json.loads(text)
             except:
@@ -61,7 +66,6 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
     @staticmethod
     def generate_resume_suggestions(section: str, current_text: str, role: str, experience_years: int) -> Dict[str, Any]:
         try:
-            model = get_gemini_model()
             prompt = f"""You are a professional resume writer and ATS expert. Improve this resume section.
 
 Section: {section}
@@ -76,14 +80,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
   "tips": ["specific tip 1", "specific tip 2", "specific tip 3"]
 }}"""
 
-            response = model.generate_content(prompt)
-            text = response.text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            text = text.strip()
-
+            text = call_gemini(prompt)
             try:
                 return json.loads(text)
             except:
@@ -104,7 +101,6 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
     @staticmethod
     def analyze_ats_compatibility(resume_content: Dict[str, str], target_role: str) -> Dict[str, Any]:
         try:
-            model = get_gemini_model()
             resume_text = "\n".join([f"{k}: {v}" for k, v in resume_content.items()])
 
             prompt = f"""You are an expert ATS analyst and senior HR consultant. Analyze this resume for the role of {target_role}.
@@ -143,14 +139,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
 
 Be highly specific to the role of {target_role}. Each point must be meaningful and actionable."""
 
-            response = model.generate_content(prompt)
-            text = response.text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            text = text.strip()
-
+            text = call_gemini(prompt)
             try:
                 return json.loads(text)
             except:

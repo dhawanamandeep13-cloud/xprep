@@ -5,4 +5,4 @@ motor
 pydantic
 openai
 httpx
-google-generativeai
+google-genai
