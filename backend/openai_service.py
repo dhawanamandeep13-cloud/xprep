@@ -1,17 +1,30 @@
 import os
 import json
-import google.generativeai as genai
+import httpx
 from typing import Dict, List, Any
+
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
 
 def call_gemini(prompt: str) -> str:
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         raise ValueError("GEMINI_API_KEY not found in environment variables")
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(prompt)
-    text = response.text.strip()
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 1000}
+    }
+
+    response = httpx.post(
+        f"{GEMINI_API_URL}?key={api_key}",
+        json=payload,
+        timeout=30.0
+    )
+    response.raise_for_status()
+    data = response.json()
+    text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
     if text.startswith("```"):
         text = text.split("```")[1]
         if text.startswith("json"):
