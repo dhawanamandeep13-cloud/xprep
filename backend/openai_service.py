@@ -3,58 +3,92 @@ import json
 import httpx
 from typing import Dict, List, Any
 
-# Updated Gemini model
-GEMINI_MODEL = "gemini-2.5-flash"
+# ✅ Stable Gemini model
+GEMINI_MODEL = "gemini-1.5-flash"
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent"
+
+
+# ✅ Shared HTTP client (better performance on Render)
+client = httpx.Client(timeout=60.0)
+
+
+def extract_json(text: str):
+    """
+    Safely extract JSON from Gemini response
+    """
+    text = text.strip()
+
+    if "```" in text:
+        text = text.replace("```json", "").replace("```", "").strip()
+
+    start = text.find("{")
+    end = text.rfind("}") + 1
+
+    if start == -1 or end == -1:
+        raise ValueError(f"❌ No JSON found in response: {text}")
+
+    return json.loads(text[start:end])
+
+
+def extract_json_array(text: str):
+    """
+    Extract JSON array safely
+    """
+    text = text.strip()
+
+    if "```" in text:
+        text = text.replace("```json", "").replace("```", "").strip()
+
+    start = text.find("[")
+    end = text.rfind("]") + 1
+
+    if start == -1 or end == -1:
+        raise ValueError(f"❌ No JSON array found in response: {text}")
+
+    return json.loads(text[start:end])
 
 
 def call_gemini(prompt: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
 
     if not api_key:
-        raise ValueError("GEMINI_API_KEY not found in environment variables")
+        raise ValueError("❌ GEMINI_API_KEY not found in environment variables")
+
+    url = f"{GEMINI_API_URL}?key={api_key}"
 
     payload = {
         "contents": [
             {
-                "parts": [
-                    {"text": prompt}
-                ]
+                "parts": [{"text": prompt}]
             }
         ],
         "generationConfig": {
-            "temperature": 0.4,
-            "maxOutputTokens": 1000
+            "temperature": 0.3,
+            "maxOutputTokens": 1200
         }
     }
 
+    print("🚀 Calling Gemini API...")
+
     try:
-        response = httpx.post(
-            f"{GEMINI_API_URL}?key={api_key}",
-            json=payload,
-            timeout=60.0
-        )
+        response = client.post(url, json=payload)
 
-        print("Gemini Status Code:", response.status_code)
-        print("Gemini Raw Response:", response.text)
+        print("📡 Status:", response.status_code)
 
-        response.raise_for_status()
+        if response.status_code != 200:
+            print("❌ Error Response:", response.text)
+            raise Exception(f"Gemini API failed: {response.text}")
 
         data = response.json()
 
-        if "candidates" not in data:
-            raise Exception(f"Invalid Gemini response: {data}")
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
 
-        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-        # Remove markdown wrappers if any
-        if text.startswith("```"):
-            text = text.replace("```json", "").replace("```", "").strip()
+        print("🧠 RAW OUTPUT:", text[:500])  # avoid huge logs
 
         return text
 
     except Exception as e:
-        print(f"Gemini API Call Failed: {str(e)}")
+        print("❌ Gemini API Call Failed:", str(e))
         raise
 
 
@@ -62,38 +96,34 @@ class OpenAIService:
 
     @staticmethod
     def generate_interview_feedback(question: str, answer: str) -> Dict[str, Any]:
-        try:
-            prompt = f"""
-You are an expert interview coach. Analyze this interview answer.
+
+        prompt = f"""
+You are an expert interview coach.
 
 Question: {question}
 Answer: {answer}
 
-Respond ONLY in JSON:
+Return ONLY JSON:
 {{
-  "score": 85,
-  "strengths": ["strength1", "strength2"],
-  "improvements": ["improvement1", "improvement2"],
-  "suggestion": "Detailed suggestion here"
+  "score": number,
+  "strengths": [string],
+  "improvements": [string],
+  "suggestion": string
 }}
 """
 
-            text = call_gemini(prompt)
-            return json.loads(text)
-
-        except Exception as e:
-            print(f"Gemini API Error: {str(e)}")
-            return {
-                "score": 70,
-                "strengths": ["Answer provided"],
-                "improvements": ["Add more detail"],
-                "suggestion": "Consider using STAR format."
-            }
+        text = call_gemini(prompt)
+        return extract_json(text)
 
     @staticmethod
-    def generate_resume_suggestions(section: str, current_text: str, role: str, experience_years: int) -> Dict[str, Any]:
-        try:
-            prompt = f"""
+    def generate_resume_suggestions(
+        section: str,
+        current_text: str,
+        role: str,
+        experience_years: int
+    ) -> Dict[str, Any]:
+
+        prompt = f"""
 You are a professional resume writer.
 
 Section: {section}
@@ -101,33 +131,28 @@ Current text: {current_text}
 Target role: {role}
 Experience: {experience_years}
 
-Respond ONLY in JSON:
+Return ONLY JSON:
 {{
-  "improved_text": "Improved ATS optimized text",
-  "keywords": ["keyword1", "keyword2", "keyword3"],
-  "tips": ["tip1", "tip2", "tip3"]
+  "improved_text": string,
+  "keywords": [string],
+  "tips": [string]
 }}
 """
 
-            text = call_gemini(prompt)
-            return json.loads(text)
-
-        except Exception as e:
-            print(f"Gemini API Error: {str(e)}")
-            return {
-                "improved_text": current_text,
-                "keywords": [],
-                "tips": ["Add measurable achievements"]
-            }
+        text = call_gemini(prompt)
+        return extract_json(text)
 
     @staticmethod
-    def analyze_ats_compatibility(resume_content: Dict[str, str], target_role: str) -> Dict[str, Any]:
-        try:
-            resume_text = "\n".join(
-                [f"{key}: {value}" for key, value in resume_content.items()]
-            )
+    def analyze_ats_compatibility(
+        resume_content: Dict[str, str],
+        target_role: str
+    ) -> Dict[str, Any]:
 
-            prompt = f"""
+        resume_text = "\n".join(
+            [f"{k}: {v}" for k, v in resume_content.items()]
+        )
+
+        prompt = f"""
 You are an ATS expert.
 
 Analyze this resume for role: {target_role}
@@ -135,80 +160,54 @@ Analyze this resume for role: {target_role}
 Resume:
 {resume_text}
 
-Respond ONLY in JSON:
+Return ONLY JSON:
 {{
-  "ats_score": 85,
-  "matched_keywords": ["Finance", "Leadership"],
-  "missing_keywords": ["SAP", "Compliance"],
-  "strengths": ["Strong summary", "Relevant experience"],
-  "improvements": ["Add more metrics", "Include certifications"],
+  "ats_score": number,
+  "matched_keywords": [string],
+  "missing_keywords": [string],
+  "strengths": [string],
+  "improvements": [string],
   "section_scores": {{
-    "summary": 80,
-    "experience": 85,
-    "skills": 75,
-    "education": 90
+    "summary": number,
+    "experience": number,
+    "skills": number,
+    "education": number
   }},
-  "recommendations": [
-    "Tailor summary to role",
-    "Add measurable results",
-    "Add role-specific tools",
-    "Improve ATS keywords"
-  ]
+  "recommendations": [string]
 }}
 """
 
-            text = call_gemini(prompt)
-            return json.loads(text)
-
-        except Exception as e:
-            print(f"Gemini API Error: {str(e)}")
-            return {
-                "ats_score": 70,
-                "matched_keywords": [],
-                "missing_keywords": ["Technical Skills", "Certifications"],
-                "strengths": ["Resume processed successfully"],
-                "improvements": ["Add role-specific keywords"],
-                "section_scores": {
-                    "summary": 65,
-                    "experience": 70,
-                    "skills": 60,
-                    "education": 75
-                },
-                "recommendations": [
-                    "Tailor resume for target role",
-                    "Add quantifiable achievements",
-                    "Add tools section",
-                    "Improve keyword density"
-                ]
-            }
+        text = call_gemini(prompt)
+        return extract_json(text)
 
     @staticmethod
-    def generate_job_matches(preferences: Dict[str, Any], resume_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        mock_jobs = [
-            {
-                "title": "Senior Software Engineer",
-                "company": "Google",
-                "location": preferences.get("location", "Bangalore"),
-                "salary": "30-45 LPA",
-                "job_type": "Full-time",
-                "posted": "2 days ago"
-            },
-            {
-                "title": "Product Manager",
-                "company": "Microsoft",
-                "location": "Hyderabad",
-                "salary": "25-40 LPA",
-                "job_type": "Full-time",
-                "posted": "1 week ago"
-            }
-        ]
+    def generate_job_matches(
+        preferences: Dict[str, Any],
+        resume_data: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
 
-        for job in mock_jobs:
-            job["match_score"] = 90
-            job["match_reasons"] = [
-                "Skills align well",
-                "Experience matches role"
-            ]
-            job["id"] = f"job_{hash(job['company']) % 10000}"
+        prompt = f"""
+You are a job matching AI.
 
-        return mock_jobs
+Suggest 5 relevant jobs.
+
+Return ONLY JSON ARRAY:
+[
+  {{
+    "title": string,
+    "company": string,
+    "location": string,
+    "match_score": number,
+    "match_reasons": [string]
+  }}
+]
+
+Candidate:
+{json.dumps(resume_data)}
+
+Preferences:
+{json.dumps(preferences)}
+"""
+
+        text = call_gemini(prompt)
+        return extract_json_array(text)
