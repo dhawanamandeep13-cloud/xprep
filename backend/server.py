@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     logger.info("Xprep AI Platform API started successfully")
-    logger.info(f"OpenAI API Key configured: {'Yes' if os.environ.get('OPENAI_API_KEY') else 'No'}")
+    logger.info(f"Gemini API Key configured: {'Yes' if os.environ.get('GEMINI_API_KEY') else 'No'}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

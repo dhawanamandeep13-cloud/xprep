@@ -4,8 +4,12 @@ import httpx
 from typing import Dict, List, Any
 
 # ✅ Stable Gemini model
-GEMINI_MODEL = "gemini-1.5-flash"
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent"
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_API_VERSION = os.environ.get("GEMINI_API_VERSION", "v1beta")
+GEMINI_API_URL = (
+    f"https://generativelanguage.googleapis.com/{GEMINI_API_VERSION}"
+    f"/models/{GEMINI_MODEL}:generateContent"
+)
 
 
 # ✅ Shared HTTP client (better performance on Render)
