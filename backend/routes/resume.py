@@ -6,7 +6,8 @@ from openai_service import OpenAIService
 router = APIRouter(prefix="/resume", tags=["resume"])
 
 class ATSAnalysisRequest(BaseModel):
-    resume_content: Dict[str, str]
+    resume_content: Optional[Dict[str, str]] = None
+    resume_text: Optional[str] = None
     target_role: str
 
 class ResumeSuggestionRequest(BaseModel):
@@ -18,11 +19,22 @@ class ResumeSuggestionRequest(BaseModel):
 @router.post("/analyze-ats")
 async def analyze_ats(request: ATSAnalysisRequest):
     try:
+        resume_content = request.resume_content
+        if resume_content is None and request.resume_text:
+            resume_content = {"text": request.resume_text}
+        if not resume_content:
+            raise HTTPException(
+                status_code=422,
+                detail="Either resume_content or resume_text is required"
+            )
+
         result = OpenAIService.analyze_ats_compatibility(
-            resume_content=request.resume_content,
+            resume_content=resume_content,
             target_role=request.target_role
         )
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
