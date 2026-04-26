@@ -28,7 +28,7 @@ def extract_json(text: str):
     start = text.find("{")
     end = text.rfind("}") + 1
 
-    if start == -1 or end == -1:
+    if start == -1 or end <= start:
         raise ValueError(f"❌ No JSON found in response: {text}")
 
     return json.loads(text[start:end])
@@ -46,7 +46,7 @@ def extract_json_array(text: str):
     start = text.find("[")
     end = text.rfind("]") + 1
 
-    if start == -1 or end == -1:
+    if start == -1 or end <= start:
         raise ValueError(f"❌ No JSON array found in response: {text}")
 
     return json.loads(text[start:end])
@@ -67,8 +67,9 @@ def call_gemini(prompt: str) -> str:
             }
         ],
         "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 1200
+            "temperature": 0.2,
+            "maxOutputTokens": 3000,
+            "response_mime_type": "application/json"
         }
     }
 
