@@ -97,6 +97,62 @@ def call_gemini(prompt: str) -> str:
         raise
 
 
+def fallback_ats_analysis(resume_text: str, target_role: str) -> Dict[str, Any]:
+    """
+    Deterministic fallback used when Gemini returns invalid JSON or fails.
+    Keeps the ATS tool usable while logs still show the Gemini issue.
+    """
+    text_lower = resume_text.lower()
+    role_lower = target_role.lower()
+    role_terms = [
+        term for term in role_lower.replace("/", " ").replace("-", " ").split()
+        if len(term) > 2
+    ]
+    common_terms = [
+        "leadership", "strategy", "finance", "financial", "reporting", "budget",
+        "forecasting", "audit", "risk", "compliance", "controls", "governance",
+        "stakeholder", "team", "process", "analysis", "planning", "operations",
+        "tax", "treasury", "cash", "sap", "excel", "ifrs", "gaap"
+    ]
+    keywords = list(dict.fromkeys(role_terms + common_terms))
+    matched = [keyword for keyword in keywords if keyword in text_lower]
+    missing = [keyword for keyword in keywords if keyword not in text_lower][:10]
+
+    length_score = 20 if len(resume_text) > 2500 else 14 if len(resume_text) > 1000 else 8
+    keyword_score = min(45, len(matched) * 4)
+    structure_score = sum(
+        5 for section in ["experience", "education", "skills", "summary", "achievement"]
+        if section in text_lower
+    )
+    ats_score = max(35, min(85, length_score + keyword_score + structure_score))
+
+    return {
+        "ats_score": ats_score,
+        "matched_keywords": matched[:12],
+        "missing_keywords": missing,
+        "strengths": [
+            "Resume content was received and analyzed successfully.",
+            "Several role-relevant keywords were identified." if matched else "The resume has usable content for ATS review."
+        ],
+        "improvements": [
+            "Add more exact keywords from the target role.",
+            "Use clear section headings such as Summary, Experience, Skills, and Education.",
+            "Quantify achievements with metrics, scale, savings, revenue, risk reduction, or team size."
+        ],
+        "section_scores": {
+            "summary": 70 if "summary" in text_lower else 50,
+            "experience": 75 if "experience" in text_lower else 55,
+            "skills": 75 if "skills" in text_lower else 50,
+            "education": 70 if "education" in text_lower else 50
+        },
+        "recommendations": [
+            f"Mirror more language from {target_role} job descriptions.",
+            "Place the most important finance leadership keywords in the top third of the resume.",
+            "Rewrite bullets to start with action verbs and include measurable business impact."
+        ]
+    }
+
+
 class OpenAIService:
 
     @staticmethod
@@ -182,8 +238,12 @@ Return ONLY JSON:
 }}
 """
 
-        text = call_gemini(prompt)
-        return extract_json(text)
+        try:
+            text = call_gemini(prompt)
+            return extract_json(text)
+        except Exception as e:
+            print("⚠️ Falling back to deterministic ATS analysis:", str(e))
+            return fallback_ats_analysis(resume_text, target_role)
 
     @staticmethod
     def generate_job_matches(
