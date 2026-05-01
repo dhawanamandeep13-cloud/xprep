@@ -5,8 +5,13 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
-import { FileText, Download, Sparkles, Check, Upload, Loader2, AlertCircle, X, User, Briefcase, GraduationCap, Wrench } from 'lucide-react';
+import jsPDF from "jspdf";
+import {
+  FileText, Download, Sparkles, Check, Upload,
+  Loader2, AlertCircle, X, User, Briefcase, GraduationCap, Wrench
+} from 'lucide-react';
 import APIService from '../services/api';
+
 
 // ─── Upload Tab ────────────────────────────────────────────────────────────────
 const UploadTab = ({ onAnalysisComplete }) => {
@@ -141,13 +146,60 @@ const UploadTab = ({ onAnalysisComplete }) => {
   );
 };
 
+
 // ─── ATS Results Panel ─────────────────────────────────────────────────────────
-const ATSResults = ({ results }) => {
+// FIX #1: All hooks moved to top of component (were previously mid-JSX or outside component)
+// FIX #2: rawCVText accepted as prop (was incorrectly referencing outer-scope variable)
+// FIX #6: Enhance CV buttons moved inside this component's return (were floating outside)
+const ATSResults = ({ results, rawCVText }) => {
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhancedCV, setEnhancedCV] = useState(null);
+  const [userHasPaid, setUserHasPaid] = useState(false);
+
   if (!results) return null;
 
   const score = results.ats_score ?? results.score ?? 0;
   const scoreColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600';
   const barColor = score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+
+  const handleEnhanceCV = async () => {
+    if (!rawCVText) return alert("CV text missing");
+    setEnhancing(true);
+    try {
+      const res = await APIService.enhanceCV({
+        cvText: rawCVText,
+        missingKeywords: results?.missing_keywords || [],
+      });
+      setEnhancedCV(res.enhancedCV);
+    } catch {
+      alert("Enhancement failed");
+    } finally {
+      setEnhancing(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    const order = await APIService.createOrder();
+    const options = {
+      key: "YOUR_RAZORPAY_KEY",
+      amount: order.amount,
+      currency: "INR",
+      order_id: order.id,
+      handler: function () {
+        setUserHasPaid(true);
+        handleEnhanceCV();
+      }
+    };
+    new window.Razorpay(options).open();
+  };
+
+  const handleDownloadPDF = () => {
+    if (!enhancedCV) return;
+    const doc = new jsPDF();
+    const lines = doc.splitTextToSize(enhancedCV, 180);
+    doc.text(lines, 10, 10);
+    doc.save("Enhanced_CV.pdf");
+  };
 
   return (
     <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -265,10 +317,44 @@ const ATSResults = ({ results }) => {
           </div>
         )}
 
+        {/* FIX #6: Enhance CV button now correctly inside ATSResults return */}
+        <div className="pt-4 border-t">
+          <Button
+            onClick={userHasPaid ? handleEnhanceCV : handlePayment}
+            disabled={enhancing}
+            className="w-full bg-green-600 hover:bg-green-700"
+          >
+            {enhancing ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enhancing...</>
+            ) : (
+              <><Sparkles className="w-4 h-4 mr-2" /> Enhance My CV with AI</>
+            )}
+          </Button>
+        </div>
+
+        {/* Enhanced CV Output */}
+        {enhancedCV && (
+          <>
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg text-sm whitespace-pre-line">
+              <p className="font-semibold mb-2">✨ Enhanced CV</p>
+              {enhancedCV}
+            </div>
+            <Button
+              onClick={handleDownloadPDF}
+              variant="outline"
+              className="w-full mt-2"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+          </>
+        )}
+
       </CardContent>
     </Card>
   );
 };
+
 
 // ─── AI Suggestion Box ─────────────────────────────────────────────────────────
 const AISuggestionBox = ({ suggestion, onUse, onDismiss }) => {
@@ -296,9 +382,17 @@ const AISuggestionBox = ({ suggestion, onUse, onDismiss }) => {
   );
 };
 
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 const ResumeBuilder = () => {
   const [activeTab, setActiveTab] = useState('build');
+
+  // FIX #1: rawCVText moved here (was incorrectly declared outside any component)
+  const [rawCVText, setRawCVText] = useState('');
+
+  // FIX #4: cvjdText declared here (was used but never declared anywhere)
+  const [cvjdText, setCvjdText] = useState('');
+
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '', location: '',
     title: '', summary: '', experience: '', education: '', skills: ''
@@ -357,6 +451,22 @@ const ResumeBuilder = () => {
     }
   };
 
+  // FIX #8: compareCVJD handler — ensure APIService.compareCVJD exists in api.js
+  const handleCompareCVJD = async () => {
+    if (!rawCVText.trim()) { setSectionError('Please upload and analyze a CV first in the Upload tab.'); return; }
+    if (!cvjdText.trim()) { setSectionError('Please paste a job description to compare.'); return; }
+    setSectionError(null);
+    setLoadingSection('cvjd');
+    try {
+      const result = await APIService.compareCVJD(rawCVText, cvjdText);
+      setATSResults(result);
+    } catch (err) {
+      setSectionError(`CV vs JD comparison failed: ${err.message}`);
+    } finally {
+      setLoadingSection(null);
+    }
+  };
+
   const templates = [
     { id: 'modern', name: 'Modern', preview: 'Clean & professional' },
     { id: 'classic', name: 'Classic', preview: 'Traditional format' },
@@ -393,7 +503,7 @@ const ResumeBuilder = () => {
             <p className="text-lg text-gray-600">Create an ATS-ready resume in minutes — or upload yours for instant analysis</p>
           </div>
 
-          {/* Tab Switcher */}
+          {/* FIX #7: All three tab buttons now correctly inside the same tab switcher div */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
               <button
@@ -411,6 +521,15 @@ const ResumeBuilder = () => {
                 }`}
               >
                 <Upload className="w-4 h-4" /> Upload & Analyze
+              </button>
+              {/* FIX #7: CV vs JD tab button moved inside the switcher div */}
+              <button
+                onClick={() => setActiveTab('cvjd')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'cvjd' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Briefcase className="w-4 h-4" /> CV vs JD
               </button>
             </div>
           </div>
@@ -434,13 +553,18 @@ const ResumeBuilder = () => {
                     <CardDescription>Get instant ATS score, keyword analysis, and AI recommendations</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <UploadTab onAnalysisComplete={(result) => setATSResults(result)} />
+                    <UploadTab
+                      onAnalysisComplete={(result, text) => {
+                        setATSResults(result);
+                        setRawCVText(text);
+                      }}
+                    />
                   </CardContent>
                 </Card>
               </div>
               <div>
                 {atsResults
-                  ? <ATSResults results={atsResults} />
+                  ? <ATSResults results={atsResults} rawCVText={rawCVText} />
                   : (
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
                       <CardContent className="pt-6 text-center">
@@ -449,6 +573,68 @@ const ResumeBuilder = () => {
                         </div>
                         <p className="font-semibold text-gray-700 mb-2">AI Analysis Ready</p>
                         <p className="text-sm text-gray-500">Upload your resume and enter a target role to see your ATS score, matched keywords, and personalized improvement tips.</p>
+                      </CardContent>
+                    </Card>
+                  )
+                }
+              </div>
+            </div>
+          )}
+
+          {/* ── CV VS JD TAB ── */}
+          {/* FIX #3 & #4: cvjdText tab now correctly placed at top-level alongside other tabs */}
+          {activeTab === 'cvjd' && (
+            <div className="grid lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Compare CV vs Job Description</CardTitle>
+                    <CardDescription>
+                      Paste a job description below to see how well your uploaded CV matches it.
+                      {!rawCVText && (
+                        <span className="block mt-1 text-amber-600 font-medium">
+                          ⚠️ Please upload your CV in the "Upload & Analyze" tab first.
+                        </span>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700 mb-1 block">
+                        Job Description <span className="text-red-500">*</span>
+                      </Label>
+                      <Textarea
+                        placeholder="Paste the full job description here..."
+                        rows={10}
+                        value={cvjdText}
+                        onChange={(e) => setCvjdText(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleCompareCVJD}
+                      disabled={loadingSection === 'cvjd' || !rawCVText}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loadingSection === 'cvjd' ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing Match...</>
+                      ) : (
+                        <><Sparkles className="w-4 h-4 mr-2" /> Analyze Match</>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+              <div>
+                {atsResults
+                  ? <ATSResults results={atsResults} rawCVText={rawCVText} />
+                  : (
+                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+                      <CardContent className="pt-6 text-center">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Briefcase className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <p className="font-semibold text-gray-700 mb-2">Match Analysis Ready</p>
+                        <p className="text-sm text-gray-500">Paste a job description and click Analyze Match to see how aligned your CV is with the role.</p>
                       </CardContent>
                     </Card>
                   )
@@ -648,6 +834,7 @@ const ResumeBuilder = () => {
 
               {/* Sidebar */}
               <div className="space-y-6">
+
                 {/* Template Selection */}
                 <Card>
                   <CardHeader>
@@ -680,7 +867,7 @@ const ResumeBuilder = () => {
                   </CardHeader>
                   <CardContent>
                     {atsResults ? (
-                      <ATSResults results={atsResults} />
+                      <ATSResults results={atsResults} rawCVText={rawCVText} />
                     ) : (
                       <div className="text-center">
                         <p className="text-sm text-gray-600 mb-4">Check how well your resume matches your target role's ATS requirements</p>
@@ -711,6 +898,7 @@ const ResumeBuilder = () => {
                     </Button>
                   </CardContent>
                 </Card>
+
               </div>
             </div>
           )}
