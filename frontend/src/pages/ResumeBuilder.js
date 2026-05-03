@@ -12,6 +12,17 @@ import {
 } from 'lucide-react';
 import APIService from '../services/api';
 
+const supportedUploadTypes = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+];
+
+const isSupportedUploadFile = (file) => {
+  const name = (file?.name || '').toLowerCase();
+  return supportedUploadTypes.includes(file?.type) || name.endsWith('.pdf') || name.endsWith('.docx') || name.endsWith('.txt');
+};
+
 
 // ─── Upload Tab ────────────────────────────────────────────────────────────────
 const UploadTab = ({ onAnalysisComplete }) => {
@@ -24,7 +35,7 @@ const UploadTab = ({ onAnalysisComplete }) => {
 
   const handleFile = (f) => {
     if (!f) return;
-    if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(f.type)) {
+    if (!isSupportedUploadFile(f)) {
       setError('Please upload a PDF, DOCX, or TXT file.');
       return;
     }
@@ -38,21 +49,13 @@ const UploadTab = ({ onAnalysisComplete }) => {
     handleFile(e.dataTransfer.files[0]);
   };
 
-  const readFileAsText = (f) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = reject;
-      reader.readAsText(f);
-    });
-
   const handleAnalyze = async () => {
     if (!file) { setError('Please upload a resume file.'); return; }
     if (!targetRole.trim()) { setError('Please enter a target role.'); return; }
     setLoading(true);
     setError(null);
     try {
-      const text = await readFileAsText(file);
+      const { text } = await APIService.extractResumeText(file);
       const result = await APIService.analyzeATS(text, targetRole);
       onAnalysisComplete(result, text);
     } catch (err) {
@@ -151,10 +154,9 @@ const UploadTab = ({ onAnalysisComplete }) => {
 // FIX #1: All hooks moved to top of component (were previously mid-JSX or outside component)
 // FIX #2: rawCVText accepted as prop (was incorrectly referencing outer-scope variable)
 // FIX #6: Enhance CV buttons moved inside this component's return (were floating outside)
-const ATSResults = ({ results, rawCVText }) => {
+const ATSResults = ({ results, rawCVText, jdText = '' }) => {
   const [enhancing, setEnhancing] = useState(false);
   const [enhancedCV, setEnhancedCV] = useState(null);
-  const [userHasPaid, setUserHasPaid] = useState(false);
 
   if (!results) return null;
 
@@ -168,29 +170,16 @@ const ATSResults = ({ results, rawCVText }) => {
     try {
       const res = await APIService.enhanceCV({
         cvText: rawCVText,
+        jdText,
         missingKeywords: results?.missing_keywords || [],
+        recommendations: results?.recommendations || [],
       });
-      setEnhancedCV(res.enhancedCV);
-    } catch {
-      alert("Enhancement failed");
+      setEnhancedCV(res.enhanced_cv || res.enhancedCV);
+    } catch (err) {
+      alert(err.message || "Enhancement failed");
     } finally {
       setEnhancing(false);
     }
-  };
-
-  const handlePayment = async () => {
-    const order = await APIService.createOrder();
-    const options = {
-      key: "YOUR_RAZORPAY_KEY",
-      amount: order.amount,
-      currency: "INR",
-      order_id: order.id,
-      handler: function () {
-        setUserHasPaid(true);
-        handleEnhanceCV();
-      }
-    };
-    new window.Razorpay(options).open();
   };
 
   const handleDownloadPDF = () => {
@@ -317,10 +306,36 @@ const ATSResults = ({ results, rawCVText }) => {
           </div>
         )}
 
+        {results.missing_cv_points?.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-2">CV Gaps Against JD</p>
+            <ul className="space-y-2">
+              {results.missing_cv_points.map((item, i) => (
+                <li key={i} className="text-sm text-gray-700 bg-red-50 rounded-lg px-3 py-2">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {results.rewrite_suggestions?.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-2">Rewrite Suggestions</p>
+            <ul className="space-y-2">
+              {results.rewrite_suggestions.map((item, i) => (
+                <li key={i} className="text-sm text-gray-700 bg-indigo-50 rounded-lg px-3 py-2">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* FIX #6: Enhance CV button now correctly inside ATSResults return */}
         <div className="pt-4 border-t">
           <Button
-            onClick={userHasPaid ? handleEnhanceCV : handlePayment}
+            onClick={handleEnhanceCV}
             disabled={enhancing}
             className="w-full bg-green-600 hover:bg-green-700"
           >
@@ -392,6 +407,9 @@ const ResumeBuilder = () => {
 
   // FIX #4: cvjdText declared here (was used but never declared anywhere)
   const [cvjdText, setCvjdText] = useState('');
+  const [cvjdCvText, setCvjdCvText] = useState('');
+  const [cvjdCvFileName, setCvjdCvFileName] = useState('');
+  const [cvjdJdFileName, setCvjdJdFileName] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '', location: '',
@@ -406,6 +424,27 @@ const ResumeBuilder = () => {
   const [atsResults, setATSResults] = useState(null);
 
   const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+  const handleCVJDFile = async (file, type) => {
+    if (!file) return;
+    if (!isSupportedUploadFile(file)) {
+      setSectionError('Please upload a PDF, DOCX, or TXT file.');
+      return;
+    }
+    try {
+      const { text } = await APIService.extractResumeText(file);
+      if (type === 'cv') {
+        setCvjdCvText(text);
+        setCvjdCvFileName(file.name);
+      } else {
+        setCvjdText(text);
+        setCvjdJdFileName(file.name);
+      }
+      setSectionError(null);
+    } catch (err) {
+      setSectionError(`Could not read file: ${err.message}`);
+    }
+  };
 
   const handleAISuggest = async (section) => {
     if (!role.trim()) {
@@ -453,13 +492,15 @@ const ResumeBuilder = () => {
 
   // FIX #8: compareCVJD handler — ensure APIService.compareCVJD exists in api.js
   const handleCompareCVJD = async () => {
-    if (!rawCVText.trim()) { setSectionError('Please upload and analyze a CV first in the Upload tab.'); return; }
+    const cvText = cvjdCvText.trim() ? cvjdCvText : rawCVText;
+    if (!cvText.trim()) { setSectionError('Please upload a CV to compare.'); return; }
     if (!cvjdText.trim()) { setSectionError('Please paste a job description to compare.'); return; }
     setSectionError(null);
     setLoadingSection('cvjd');
     try {
-      const result = await APIService.compareCVJD(rawCVText, cvjdText);
+      const result = await APIService.compareCVJD(cvText, cvjdText);
       setATSResults(result);
+      setRawCVText(cvText);
     } catch (err) {
       setSectionError(`CV vs JD comparison failed: ${err.message}`);
     } finally {
@@ -590,21 +631,54 @@ const ResumeBuilder = () => {
                   <CardHeader>
                     <CardTitle>Compare CV vs Job Description</CardTitle>
                     <CardDescription>
-                      Paste a job description below to see how well your uploaded CV matches it.
-                      {!rawCVText && (
-                        <span className="block mt-1 text-amber-600 font-medium">
-                          ⚠️ Please upload your CV in the "Upload & Analyze" tab first.
-                        </span>
-                      )}
+                      Upload a CV and job description to see gaps, ATS score, and AI rewrite guidance.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-5">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700 mb-1 block">
+                          Upload CV <span className="text-red-500">*</span>
+                        </Label>
+                        <label className="flex min-h-[112px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white p-4 text-center hover:border-blue-300 hover:bg-blue-50">
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.txt"
+                            className="hidden"
+                            onChange={(e) => handleCVJDFile(e.target.files[0], 'cv')}
+                          />
+                          <Upload className="w-6 h-6 text-blue-600 mb-2" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            {cvjdCvFileName || (rawCVText ? 'Use previously uploaded CV' : 'Choose CV file')}
+                          </span>
+                          <span className="text-xs text-gray-500 mt-1">PDF, DOCX, or TXT</span>
+                        </label>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700 mb-1 block">
+                          Upload JD
+                        </Label>
+                        <label className="flex min-h-[112px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white p-4 text-center hover:border-blue-300 hover:bg-blue-50">
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.txt"
+                            className="hidden"
+                            onChange={(e) => handleCVJDFile(e.target.files[0], 'jd')}
+                          />
+                          <Briefcase className="w-6 h-6 text-blue-600 mb-2" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            {cvjdJdFileName || 'Choose JD file'}
+                          </span>
+                          <span className="text-xs text-gray-500 mt-1">Or paste the JD below</span>
+                        </label>
+                      </div>
+                    </div>
                     <div>
                       <Label className="text-sm font-semibold text-gray-700 mb-1 block">
                         Job Description <span className="text-red-500">*</span>
                       </Label>
                       <Textarea
-                        placeholder="Paste the full job description here..."
+                        placeholder="Paste the full job description here, or upload a JD file above..."
                         rows={10}
                         value={cvjdText}
                         onChange={(e) => setCvjdText(e.target.value)}
@@ -612,7 +686,7 @@ const ResumeBuilder = () => {
                     </div>
                     <Button
                       onClick={handleCompareCVJD}
-                      disabled={loadingSection === 'cvjd' || !rawCVText}
+                      disabled={loadingSection === 'cvjd' || (!cvjdCvText && !rawCVText)}
                       className="w-full bg-blue-600 hover:bg-blue-700"
                     >
                       {loadingSection === 'cvjd' ? (
@@ -626,7 +700,7 @@ const ResumeBuilder = () => {
               </div>
               <div>
                 {atsResults
-                  ? <ATSResults results={atsResults} rawCVText={rawCVText} />
+                  ? <ATSResults results={atsResults} rawCVText={cvjdCvText || rawCVText} jdText={cvjdText} />
                   : (
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
                       <CardContent className="pt-6 text-center">
@@ -634,7 +708,7 @@ const ResumeBuilder = () => {
                           <Briefcase className="w-8 h-8 text-blue-600" />
                         </div>
                         <p className="font-semibold text-gray-700 mb-2">Match Analysis Ready</p>
-                        <p className="text-sm text-gray-500">Paste a job description and click Analyze Match to see how aligned your CV is with the role.</p>
+                        <p className="text-sm text-gray-500">Upload your CV, add the job description, and compare alignment against the role.</p>
                       </CardContent>
                     </Card>
                   )

@@ -26,8 +26,33 @@ async function request(endpoint, options = {}) {
   }
 }
 
+async function uploadFile(endpoint, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const detail = Array.isArray(data.detail)
+        ? data.detail.map((item) => item.msg || JSON.stringify(item)).join("; ")
+        : data.detail;
+      throw new Error(detail || data.message || `Request failed with status ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Upload Error:", error.message);
+    throw error;
+  }
+}
+
 const APIService = {
-  // ─── INTERVIEW ───────────────────────────────────────────────
   startMockInterview(interviewType, role = "General") {
     return request("/interview/mock/start", {
       method: "POST",
@@ -52,29 +77,7 @@ const APIService = {
   getSession(sessionId) {
     return request(`/interview/mock/session/${sessionId}`);
   },
-async enhanceCV(payload) {
-  const res = await fetch("/api/enhance-cv", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
-}
 
-async compareCVJD(cvText, jdText) {
-  const res = await fetch("/api/cv-vs-jd", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ cvText, jdText })
-  });
-  return res.json();
-}
-
-async createOrder() {
-  const res = await fetch("/api/create-order", { method: "POST" });
-  return res.json();
-}
-  // ─── RESUME ──────────────────────────────────────────────────
   generateResumeSuggestions(section, currentText, role, experienceYears) {
     return request("/resume/generate-suggestions", {
       method: "POST",
@@ -97,7 +100,32 @@ async createOrder() {
     });
   },
 
-  // ─── JOBS ─────────────────────────────────────────────────────
+  extractResumeText(file) {
+    return uploadFile("/resume/extract-text", file);
+  },
+
+  compareCVJD(cvText, jdText) {
+    return request("/resume/cv-vs-jd", {
+      method: "POST",
+      body: JSON.stringify({
+        cv_text: cvText,
+        jd_text: jdText,
+      }),
+    });
+  },
+
+  enhanceCV(payload) {
+    return request("/resume/enhance-cv", {
+      method: "POST",
+      body: JSON.stringify({
+        cv_text: payload.cvText,
+        jd_text: payload.jdText || "",
+        missing_keywords: payload.missingKeywords || [],
+        recommendations: payload.recommendations || [],
+      }),
+    });
+  },
+
   searchJobs(preferences, resumeData = {}) {
     return request("/jobs/search", {
       method: "POST",

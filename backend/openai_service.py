@@ -153,6 +153,73 @@ def fallback_ats_analysis(resume_text: str, target_role: str) -> Dict[str, Any]:
     }
 
 
+def fallback_cv_jd_analysis(cv_text: str, jd_text: str) -> Dict[str, Any]:
+    cv_lower = cv_text.lower()
+    jd_words = [
+        word.strip(".,:;()[]{}").lower()
+        for word in jd_text.replace("/", " ").replace("-", " ").split()
+    ]
+    stop_words = {
+        "and", "the", "for", "with", "you", "your", "are", "will", "this",
+        "that", "from", "have", "has", "our", "their", "role", "job", "work"
+    }
+    jd_keywords = [
+        word for word in jd_words
+        if len(word) > 3 and word not in stop_words and not word.isdigit()
+    ]
+    jd_keywords = list(dict.fromkeys(jd_keywords))[:35]
+    matched = [word for word in jd_keywords if word in cv_lower]
+    missing = [word for word in jd_keywords if word not in cv_lower][:15]
+    score = int((len(matched) / max(len(jd_keywords), 1)) * 100)
+    score = max(35, min(90, score))
+
+    return {
+        "ats_score": score,
+        "matched_keywords": matched[:15],
+        "missing_keywords": missing,
+        "strengths": [
+            "The CV contains several relevant terms from the job description." if matched else "The CV has readable content for comparison.",
+            "The comparison was completed against the provided job description."
+        ],
+        "improvements": [
+            "Add the missing role-specific keywords naturally into the summary, skills, and experience sections.",
+            "Rewrite experience bullets to mirror the job description's responsibilities and required outcomes.",
+            "Quantify achievements with numbers, scale, savings, risk reduction, revenue, or team size."
+        ],
+        "section_scores": {
+            "summary": 70 if "summary" in cv_lower else 50,
+            "experience": 75 if "experience" in cv_lower else 55,
+            "skills": 75 if "skills" in cv_lower else 50,
+            "education": 65 if "education" in cv_lower else 50
+        },
+        "recommendations": [
+            "Put the most important JD keywords in the top third of the CV.",
+            "Add a short target-role summary aligned to the job description.",
+            "Prioritize recent, measurable achievements that map to the JD requirements."
+        ],
+        "missing_cv_points": missing,
+        "rewrite_suggestions": [
+            "Convert generic responsibilities into achievement-led bullets.",
+            "Use exact terminology from the JD where it accurately reflects your experience.",
+            "Group technical and domain skills into a clear Skills section."
+        ]
+    }
+
+
+def fallback_enhanced_cv(cv_text: str, missing_keywords: List[str], recommendations: List[str]) -> Dict[str, str]:
+    keyword_line = ", ".join(missing_keywords[:12]) if missing_keywords else "role-relevant keywords"
+    recommendation_lines = "\n".join(f"- {item}" for item in recommendations[:5])
+    enhanced_cv = f"""{cv_text.strip()}
+
+Targeted ATS Enhancement Notes
+Keywords to weave in naturally: {keyword_line}
+
+Recommended CV changes:
+{recommendation_lines or "- Add quantified achievements and align language to the target job description."}
+"""
+    return {"enhanced_cv": enhanced_cv}
+
+
 class OpenAIService:
 
     @staticmethod
@@ -244,6 +311,81 @@ Return ONLY JSON:
         except Exception as e:
             print("⚠️ Falling back to deterministic ATS analysis:", str(e))
             return fallback_ats_analysis(resume_text, target_role)
+
+    @staticmethod
+    def compare_cv_to_jd(cv_text: str, jd_text: str) -> Dict[str, Any]:
+        prompt = f"""
+You are an ATS and recruitment screening expert.
+
+Compare this CV against this job description. Identify alignment gaps and concrete CV rewrite guidance.
+
+CV:
+{cv_text}
+
+Job Description:
+{jd_text}
+
+Return ONLY JSON:
+{{
+  "ats_score": number,
+  "matched_keywords": [string],
+  "missing_keywords": [string],
+  "missing_cv_points": [string],
+  "strengths": [string],
+  "improvements": [string],
+  "rewrite_suggestions": [string],
+  "section_scores": {{
+    "summary": number,
+    "experience": number,
+    "skills": number,
+    "education": number
+  }},
+  "recommendations": [string]
+}}
+"""
+        try:
+            text = call_gemini(prompt)
+            return extract_json(text)
+        except Exception as e:
+            print("⚠️ Falling back to deterministic CV vs JD analysis:", str(e))
+            return fallback_cv_jd_analysis(cv_text, jd_text)
+
+    @staticmethod
+    def enhance_cv_for_jd(
+        cv_text: str,
+        jd_text: str,
+        missing_keywords: List[str],
+        recommendations: List[str]
+    ) -> Dict[str, str]:
+        prompt = f"""
+You are a senior resume writer.
+
+Rewrite and enhance the CV for the job description while staying truthful to the candidate's original experience.
+Add missing keywords only where they fit naturally. Improve summary, skills, and bullets for ATS clarity.
+
+Original CV:
+{cv_text}
+
+Job Description:
+{jd_text}
+
+Missing keywords to consider:
+{json.dumps(missing_keywords)}
+
+Recommendations to address:
+{json.dumps(recommendations)}
+
+Return ONLY JSON:
+{{
+  "enhanced_cv": string
+}}
+"""
+        try:
+            text = call_gemini(prompt)
+            return extract_json(text)
+        except Exception as e:
+            print("⚠️ Falling back to deterministic CV enhancement:", str(e))
+            return fallback_enhanced_cv(cv_text, missing_keywords, recommendations)
 
     @staticmethod
     def generate_job_matches(
