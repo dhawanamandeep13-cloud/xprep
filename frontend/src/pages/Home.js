@@ -407,11 +407,12 @@ const afterAttrs = [
 ];
 
 /* ── TOOLS DATA ────────────────────────────────────────────── */
+/* FIX: All link paths corrected to match App.js route definitions */
 const tools = [
   {
     icon: "🎤", title: "AI Mock Interview",
     desc: "Practice with an AI interviewer that adapts to your role in real-time and gives detailed feedback on every answer.",
-    tag: "★ Most Popular", link: "/MockInterview", comingSoon: false,
+    tag: "★ Most Popular", link: "/mock-interview", comingSoon: false,          // ✅ FIXED
     grad: "linear-gradient(145deg,#0F172A 0%,#1E3A8A 60%,#312E81 100%)",
     glow1: "rgba(99,102,241,0.5)", glow2: "rgba(59,130,246,0.6)",
     hoverShadow: "rgba(49,46,129,0.35)",
@@ -421,7 +422,7 @@ const tools = [
   {
     icon: "📄", title: "Resume Builder",
     desc: "Build ATS-optimised resumes that pass every screening filter and land directly in front of real hiring managers.",
-    tag: "✓ ATS-Ready", link: "/ResumeBuilder", comingSoon: false,
+    tag: "✓ ATS-Ready", link: "/resume-builder", comingSoon: false,             // ✅ FIXED
     grad: "linear-gradient(145deg,#052E16 0%,#065F46 55%,#0F766E 100%)",
     glow1: "rgba(16,185,129,0.5)", glow2: "rgba(6,182,212,0.6)",
     hoverShadow: "rgba(6,95,70,0.35)",
@@ -431,7 +432,7 @@ const tools = [
   {
     icon: "🔍", title: "Job Hunter",
     desc: "Discover opportunities intelligently matched to your profile, skills, and career aspirations with precision AI.",
-    tag: "AI-Matched", link: "/JobHunter", comingSoon: false,
+    tag: "AI-Matched", link: "/job-hunter", comingSoon: false,                  // ✅ FIXED
     grad: "linear-gradient(145deg,#1E1B4B 0%,#4C1D95 55%,#6D28D9 100%)",
     glow1: "rgba(167,139,250,0.5)", glow2: "rgba(236,72,153,0.5)",
     hoverShadow: "rgba(109,40,217,0.35)",
@@ -441,7 +442,7 @@ const tools = [
   {
     icon: "📚", title: "Learning Modules",
     desc: "Structured, bite-sized courses in communication, domain knowledge, aptitude, and essential soft skills.",
-    tag: "Structured", link: "/Modules", comingSoon: false,
+    tag: "Structured", link: "/modules", comingSoon: false,                     // ✅ FIXED
     grad: "linear-gradient(145deg,#1C1917 0%,#78350F 55%,#B45309 100%)",
     glow1: "rgba(251,191,36,0.5)", glow2: "rgba(239,68,68,0.5)",
     hoverShadow: "rgba(180,83,9,0.35)",
@@ -451,7 +452,7 @@ const tools = [
   {
     icon: "❓", title: "Question Bank",
     desc: "10,000+ curated questions across technical, HR, and behavioural categories — all with detailed model answers.",
-    tag: "10K+ Questions", link: "/QuestionBank", comingSoon: false,
+    tag: "10K+ Questions", link: "/questions-bank", comingSoon: false,          // ✅ FIXED
     grad: "linear-gradient(145deg,#083344 0%,#0E7490 55%,#0284C7 100%)",
     glow1: "rgba(56,189,248,0.5)", glow2: "rgba(37,99,235,0.5)",
     hoverShadow: "rgba(14,116,144,0.35)",
@@ -461,7 +462,7 @@ const tools = [
   {
     icon: "🤖", title: "AI Career Coach",
     desc: "Get personalised advice on career paths, salary negotiation, and your long-term professional growth strategy.",
-    tag: "New", link: null, comingSoon: true,
+    tag: "New", link: null, comingSoon: true,                                   // ✅ unchanged
     grad: "linear-gradient(145deg,#1E1B4B 0%,#3730A3 50%,#4F46E5 100%)",
     glow1: "rgba(129,140,248,0.4)", glow2: "rgba(99,102,241,0.4)",
     hoverShadow: "rgba(79,70,229,0.3)",
@@ -640,9 +641,9 @@ const Home = () => {
 
           {/* CTAs */}
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 44 }}>
-            <button className="xp-btn-hero" onClick={() => window.location.href = "/MockInterview"}>
+            <button className="xp-btn-hero" onClick={() => window.location.href = "/mock-interview"}>
               Start Free Trial &nbsp;→
-            </button>
+            </button>                                    {/* ✅ FIXED */}
             <button className="xp-btn-outline">
               ▶ &nbsp;Watch Demo
             </button>
@@ -902,9 +903,9 @@ const Home = () => {
         <p style={{ fontSize: 17, color: "rgba(255,255,255,0.62)", marginBottom: 36, position: "relative" }}>
           Join 10,000+ professionals who landed their dream jobs with Xprep
         </p>
-        <button className="xp-btn-white" onClick={() => window.location.href = "/MockInterview"}>
+        <button className="xp-btn-white" onClick={() => window.location.href = "/mock-interview"}>
           Start Free Today &nbsp;→
-        </button>
+        </button>                                        {/* ✅ FIXED */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 28, marginTop: 28, position: "relative" }}>
           {["Free to start", "No credit card needed", "Cancel anytime"].map((txt, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
