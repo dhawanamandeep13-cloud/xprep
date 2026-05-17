@@ -9,6 +9,7 @@ import ResumeBuilder from "./pages/ResumeBuilder";
 import JobHunter from "./pages/JobHunter";
 import QuestionsBank from "./pages/QuestionsBank";
 import Modules from "./pages/Modules";
+import Login from "./pages/Login";
 import { Toaster } from "./components/ui/toaster";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/job-hunter" element={<JobHunter />} />
           <Route path="/questions-bank" element={<QuestionsBank />} />
           <Route path="/modules" element={<Modules />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
         <Footer />
         <Toaster />

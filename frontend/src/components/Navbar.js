@@ -127,8 +127,12 @@ const Navbar = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" size="sm">Sign In</Button>
-            <Button size="sm">Get Started</Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">Sign In</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link to="/login">Get Started</Link>
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -187,8 +191,12 @@ const Navbar = () => {
               </Link>
 
               <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-gray-200">
-                <Button variant="ghost" size="sm">Sign In</Button>
-                <Button size="sm">Get Started</Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Sign In</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/login">Get Started</Link>
+                </Button>
               </div>
             </div>
           </div>

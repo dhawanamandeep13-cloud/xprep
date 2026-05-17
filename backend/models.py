@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import uuid
 
 
@@ -39,7 +39,7 @@ class ResumeSuggestionRequest(BaseModel):
 
 
 class ResumeAnalysisRequest(BaseModel):
-    resume_content: Dict[str, str]
+    resume_content: Union[Dict[str, str], str]
     target_role: str
 
 

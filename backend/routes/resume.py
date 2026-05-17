@@ -1,6 +1,6 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from openai_service import OpenAIService
 from io import BytesIO
 from pypdf import PdfReader
@@ -9,7 +9,7 @@ from docx import Document
 router = APIRouter(prefix="/resume", tags=["resume"])
 
 class ATSAnalysisRequest(BaseModel):
-    resume_content: Optional[Dict[str, str]] = None
+    resume_content: Optional[Union[Dict[str, str], str]] = None
     resume_text: Optional[str] = None
     target_role: str
 
@@ -56,7 +56,10 @@ async def extract_upload_text(file: UploadFile) -> str:
 async def analyze_ats(request: ATSAnalysisRequest):
     try:
         resume_content = request.resume_content
-        if resume_content is None and request.resume_text:
+        if isinstance(resume_content, str):
+            resume_text = resume_content.strip()
+            resume_content = {"text": resume_text} if resume_text else None
+        elif resume_content is None and request.resume_text:
             resume_content = {"text": request.resume_text}
         if not resume_content:
             raise HTTPException(
