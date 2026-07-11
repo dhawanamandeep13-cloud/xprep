@@ -65,7 +65,10 @@ const Navbar = () => {
             {/* AI Tools Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
+                type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
+                aria-expanded={dropdownOpen}
+                aria-haspopup="menu"
                 className={`flex items-center gap-1 text-sm font-medium transition-colors hover:text-blue-600 ${
                   isAIToolActive ? 'text-blue-600' : 'text-gray-700'
                 }`}
@@ -131,12 +134,18 @@ const Navbar = () => {
               <Link to="/login">Sign In</Link>
             </Button>
             <Button size="sm" asChild>
-              <Link to="/login">Get Started</Link>
+              <Link to="/mock-interview">Get Started</Link>
             </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+          <button
+            type="button"
+            className="md:hidden rounded-lg p-2 hover:bg-slate-100"
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen(!isOpen)}
+          >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -153,7 +162,9 @@ const Navbar = () => {
               {/* Mobile AI Tools Accordion */}
               <div>
                 <button
+                  type="button"
                   onClick={() => setMobileToolsOpen(!mobileToolsOpen)}
+                  aria-expanded={mobileToolsOpen}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-blue-50 ${
                     isAIToolActive ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
                   }`}
@@ -195,7 +206,7 @@ const Navbar = () => {
                   <Link to="/login">Sign In</Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/login">Get Started</Link>
+                  <Link to="/mock-interview">Get Started</Link>
                 </Button>
               </div>
             </div>

@@ -1,0 +1,10 @@
+{
+  "short_name": "Xprep",
+  "name": "Xprep Career Preparation",
+  "description": "AI interview practice, ATS resume feedback and career preparation tools.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": []
+}
