@@ -1,43 +1,51 @@
 from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
+
+# Database
+from database import client, db
 
 # Import route modules
 from routes.interview import router as interview_router
 from routes.resume import router as resume_router
 from routes.jobs import router as jobs_router
+from routes.auth import router as auth_router
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Create the main app
+app = FastAPI(
+    title="Xprep AI Platform",
+    version="1.0.0"
+)
 
-# Create the main app without a prefix
-app = FastAPI(title="Xprep AI Platform", version="1.0.0")
-
-# Create a router with the /api prefix
+# Create API router
 api_router = APIRouter(prefix="/api")
 
-# Add basic route
+
+# Root endpoint
 @api_router.get("/")
 async def root():
-    return {"message": "Xprep AI Platform API", "status": "running"}
+    return {
+        "message": "Xprep AI Platform API",
+        "status": "running"
+    }
 
-# Include feature routers
+
+# Register all routers
 api_router.include_router(interview_router)
 api_router.include_router(resume_router)
 api_router.include_router(jobs_router)
+api_router.include_router(auth_router)
 
-# Include the router in the main app
+# Include API router
 app.include_router(api_router)
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -46,17 +54,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
+# Logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
 logger = logging.getLogger(__name__)
+
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("Xprep AI Platform API started successfully")
-    logger.info(f"Gemini API Key configured: {'Yes' if os.environ.get('GEMINI_API_KEY') else 'No'}")
+    logger.info(
+        f"Gemini API Key configured: {'Yes' if os.environ.get('GEMINI_API_KEY') else 'No'}"
+    )
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

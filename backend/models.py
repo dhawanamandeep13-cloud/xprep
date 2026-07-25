@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any, Union
 import uuid
 
@@ -93,3 +93,25 @@ class InterviewQuestion(BaseModel):
     companies: List[str]
     sample_answer: Optional[str] = None
     tips: Optional[List[str]] = None
+
+
+# ---------------------------
+# Authentication Models
+# ---------------------------
+
+class UserRegister(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserInDB(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    email: EmailStr
+    hashed_password: str
