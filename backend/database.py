@@ -3,8 +3,14 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
+# Go one folder up (project root)
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
-client = AsyncIOMotorClient(os.environ["MONGO_URL"])
-db = client[os.environ["DB_NAME"]]
+env_path = ROOT_DIR / ".env"
+print("Loading:", env_path)
+load_dotenv(env_path)
+
+client = AsyncIOMotorClient(os.getenv("MONGO_URL"))
+db = client[os.getenv("DB_NAME")]
+print("MONGO_URL =", os.getenv("MONGO_URL"))
+print("DB_NAME =", os.getenv("DB_NAME"))

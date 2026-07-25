@@ -1,7 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from models import UserRegister, UserLogin, UserInDB
-from auth import hash_password, verify_password, create_access_token
-from server import db
+from auth_utils import (
+    hash_password,
+    verify_password,
+    create_access_token,
+)
+from database import db
 
 router = APIRouter(tags=["Authentication"])
 
