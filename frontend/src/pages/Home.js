@@ -84,6 +84,32 @@ const testimonials = [
   },
 ];
 
+const AnimatedRobot = () => (
+  <div className="relative mx-auto flex h-48 w-48 items-center justify-center sm:h-56 sm:w-56 lg:mx-0" aria-hidden="true">
+    <div className="absolute inset-6 rounded-full bg-blue-100/80 blur-2xl" />
+    <svg className="xprep-ai-robot relative z-10 h-full w-full" viewBox="0 0 220 220" role="img">
+      <circle className="xprep-robot-spark" cx="56" cy="43" r="6" fill="#22c55e" />
+      <circle className="xprep-robot-spark xprep-robot-spark-delay" cx="178" cy="64" r="5" fill="#38bdf8" />
+      <path d="M110 46V27" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
+      <circle cx="110" cy="22" r="10" fill="#2563eb" />
+      <rect x="56" y="49" width="108" height="82" rx="28" fill="#f8fafc" stroke="#0f172a" strokeWidth="7" />
+      <rect x="75" y="72" width="70" height="35" rx="17.5" fill="#0f172a" />
+      <circle className="xprep-robot-eye" cx="94" cy="89" r="6" fill="#60a5fa" />
+      <circle className="xprep-robot-eye xprep-robot-eye-delay" cx="126" cy="89" r="6" fill="#60a5fa" />
+      <path d="M93 117C101 123 119 123 127 117" stroke="#2563eb" strokeWidth="5" strokeLinecap="round" fill="none" />
+      <path className="xprep-robot-arm-left" d="M57 92C34 89 25 77 22 60" stroke="#2563eb" strokeWidth="12" strokeLinecap="round" fill="none" />
+      <path d="M164 92C187 96 196 111 195 128" stroke="#2563eb" strokeWidth="12" strokeLinecap="round" fill="none" />
+      <rect x="74" y="128" width="72" height="55" rx="18" fill="#2563eb" stroke="#0f172a" strokeWidth="7" />
+      <path d="M91 151H129" stroke="#bfdbfe" strokeWidth="7" strokeLinecap="round" />
+      <path d="M88 183L74 199" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
+      <path d="M132 183L146 199" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
+      <path d="M62 202H85" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
+      <path d="M135 202H158" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
+    </svg>
+    <div className="xprep-robot-shadow absolute bottom-0 h-4 w-28 rounded-full bg-slate-300/70 blur-sm" />
+  </div>
+);
+
 const Home = () => {
   return (
     <main className="overflow-x-hidden bg-white pt-16 text-slate-950">
@@ -177,14 +203,19 @@ const Home = () => {
 
       <section className="bg-slate-50 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <p className="text-sm font-bold uppercase tracking-wide text-blue-700">AI tools</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-normal text-slate-950 sm:text-4xl">
-              One workspace for the messy middle of career preparation.
-            </h2>
-            <p className="mt-4 text-slate-600">
-              Each tool solves a real preparation job, from first practice answer to final application polish.
-            </p>
+          <div className="grid gap-8 lg:grid-cols-[240px_1fr] lg:items-center">
+            <AnimatedRobot />
+            <div className="max-w-3xl text-center lg:text-left">
+              <h2 className="text-4xl font-extrabold tracking-normal text-slate-950 sm:text-5xl">
+                AI Tools
+              </h2>
+              <p className="mt-4 text-2xl font-bold leading-snug text-slate-900 sm:text-3xl">
+                Practice smarter, polish faster, and apply with confidence.
+              </p>
+              <p className="mt-4 text-slate-600">
+                Each tool solves a real preparation job, from first practice answer to final application polish.
+              </p>
+            </div>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {tools.map(({ title, description, href, icon: Icon, stat, accent }) => (
