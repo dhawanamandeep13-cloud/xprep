@@ -20,7 +20,12 @@ from database import client, db
 from routes.interview import router as interview_router
 from routes.resume import router as resume_router
 from routes.jobs import router as jobs_router
+
+print("ABOUT TO IMPORT AUTH")
+
 from routes.auth import router as auth_router
+
+print("AUTH IMPORT FINISHED")
 
 # -------------------------------------------------
 # FastAPI App
@@ -94,3 +99,14 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "server:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+    )
