@@ -24,6 +24,8 @@ async def register(user: UserRegister):
             {"email": user.email}
         )
 
+        print("Existing user:", existing_user)
+
         if existing_user:
             raise HTTPException(
                 status_code=400,
@@ -37,8 +39,12 @@ async def register(user: UserRegister):
             hashed_password=hash_password(user.password)
         )
 
+        print("Hashed Password:", new_user.hashed_password)
+
         # Save user
         await db.users.insert_one(new_user.dict())
+
+        print("User inserted successfully")
 
         return {
             "message": "User registered successfully"
@@ -63,20 +69,34 @@ async def register(user: UserRegister):
 @router.post("/login")
 async def login(user: UserLogin):
     try:
+        print("\n========== LOGIN FUNCTION CALLED ==========")
+        print("Email entered:", user.email)
+        print("Password entered:", user.password)
+
+        print("\n===== ALL USERS IN DATABASE =====")
+
+        cursor = db.users.find({})
+
+        async for u in cursor:
+            print(u)
+
+        print("=================================\n")
+
         # Find user
         existing_user = await db.users.find_one(
             {"email": user.email}
         )
 
+        print("User from DB:", existing_user)
+
         if not existing_user:
+            print("User not found in database")
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
             )
 
-        # Debug prints
-        print("Entered Password :", user.password)
-        print("Stored Hash      :", existing_user["hashed_password"])
+        print("Stored Hash:", existing_user["hashed_password"])
 
         # Verify password
         result = verify_password(
@@ -84,9 +104,10 @@ async def login(user: UserLogin):
             existing_user["hashed_password"]
         )
 
-        print("Password Match   :", result)
+        print("Password Match:", result)
 
         if not result:
+            print("Password verification failed")
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
@@ -96,6 +117,9 @@ async def login(user: UserLogin):
         token = create_access_token(
             {"sub": existing_user["email"]}
         )
+
+        print("JWT Token Created Successfully")
+        print("============================================")
 
         return {
             "access_token": token,
@@ -124,5 +148,8 @@ async def login(user: UserLogin):
 async def get_me(current_user=Depends(get_current_user)):
     return {
         "message": "Authenticated successfully",
-        "user": current_user
+        "user": {
+            "name": current_user["name"],
+            "email": current_user["email"]
+        }
     }
