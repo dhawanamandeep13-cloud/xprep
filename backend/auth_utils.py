@@ -12,8 +12,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
-
-
 def hash_password(password: str):
     return pwd_context.hash(password)
 
@@ -55,7 +53,7 @@ def verify_token(token: str):
         return None
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = verify_token(token)
 
     if payload is None:
@@ -64,4 +62,22 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Invalid or expired token"
         )
 
-    return payload
+    from database import db
+
+    email = payload.get("sub")
+
+    if email is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )
+
+    user = await db.users.find_one({"email": email})
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
