@@ -1,17 +1,26 @@
+import os
+
+print("AUTH FILE:", os.path.abspath(__file__))
+print("LOGIN TYPE: OAuth2PasswordRequestForm")
+
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from logger import logger
+
 from models import (
     UserRegister,
-    UserLogin,
     UserInDB,
     UserUpdate,
     ChangePassword,
 )
+
 from auth_utils import (
     hash_password,
     verify_password,
     create_access_token,
     get_current_user,
 )
+
 from database import db
 
 print("AUTH.PY LOADED")
@@ -19,20 +28,17 @@ print("AUTH.PY LOADED")
 router = APIRouter(tags=["Authentication"])
 
 
-# ----------------------------
+# -------------------------------------------------
 # Register
-# ----------------------------
+# -------------------------------------------------
 @router.post("/register")
 async def register(user: UserRegister):
-    print("REGISTER FUNCTION CALLED")
-    print("================================")
+    logger.info("Register endpoint called")
 
     try:
         existing_user = await db.users.find_one(
             {"email": user.email}
         )
-
-        print("Existing user:", existing_user)
 
         if existing_user:
             raise HTTPException(
@@ -46,12 +52,9 @@ async def register(user: UserRegister):
             hashed_password=hash_password(user.password)
         )
 
-        print("Hashed Password:", new_user.hashed_password)
-
-        # Pydantic v2
         await db.users.insert_one(new_user.model_dump())
 
-        print("User inserted successfully")
+        logger.info(f"New user registered: {user.email}")
 
         return {
             "message": "User registered successfully"
@@ -62,10 +65,9 @@ async def register(user: UserRegister):
 
     except Exception as e:
         import traceback
-
-        print("\n========== REGISTER ERROR ==========")
         traceback.print_exc()
-        print("====================================\n")
+
+        logger.error(f"Registration failed: {str(e)}")
 
         raise HTTPException(
             status_code=500,
@@ -73,29 +75,19 @@ async def register(user: UserRegister):
         )
 
 
-# ----------------------------
-# Login
-# ----------------------------
+# -------------------------------------------------
+# Login (Swagger OAuth2 Compatible)
+# -------------------------------------------------
 @router.post("/login")
-async def login(user: UserLogin):
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends()
+):
+    logger.info("Login endpoint called")
+
     try:
-        print("\n========== LOGIN FUNCTION CALLED ==========")
-        print("Email entered:", user.email)
-
-        print("\n===== ALL USERS IN DATABASE =====")
-
-        cursor = db.users.find({})
-
-        async for u in cursor:
-            print(u)
-
-        print("=================================\n")
-
         existing_user = await db.users.find_one(
-            {"email": user.email}
+            {"email": form_data.username}
         )
-
-        print("User from DB:", existing_user)
 
         if not existing_user:
             raise HTTPException(
@@ -103,14 +95,10 @@ async def login(user: UserLogin):
                 detail="Invalid email or password"
             )
 
-        result = verify_password(
-            user.password,
+        if not verify_password(
+            form_data.password,
             existing_user["hashed_password"]
-        )
-
-        print("Password Match:", result)
-
-        if not result:
+        ):
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
@@ -120,7 +108,7 @@ async def login(user: UserLogin):
             {"sub": existing_user["email"]}
         )
 
-        print("JWT Token Created Successfully")
+        logger.info(f"User logged in: {existing_user['email']}")
 
         return {
             "access_token": token,
@@ -134,10 +122,9 @@ async def login(user: UserLogin):
 
     except Exception as e:
         import traceback
-
-        print("\n========== LOGIN ERROR ==========")
         traceback.print_exc()
-        print("=================================\n")
+
+        logger.error(f"Login failed: {str(e)}")
 
         raise HTTPException(
             status_code=500,
@@ -145,11 +132,15 @@ async def login(user: UserLogin):
         )
 
 
-# ----------------------------
+# -------------------------------------------------
 # Get Current User
-# ----------------------------
+# -------------------------------------------------
 @router.get("/me")
-async def get_me(current_user=Depends(get_current_user)):
+async def get_me(
+    current_user=Depends(get_current_user)
+):
+    logger.info(f"Profile viewed: {current_user['email']}")
+
     return {
         "message": "Authenticated successfully",
         "user": {
@@ -159,9 +150,9 @@ async def get_me(current_user=Depends(get_current_user)):
     }
 
 
-# ----------------------------
+# -------------------------------------------------
 # Update Profile
-# ----------------------------
+# -------------------------------------------------
 @router.put("/profile")
 async def update_profile(
     user_data: UserUpdate,
@@ -200,6 +191,10 @@ async def update_profile(
             {"_id": current_user["_id"]}
         )
 
+        logger.info(
+            f"Profile updated: {updated_user['email']}"
+        )
+
         return {
             "message": "Profile updated successfully",
             "user": {
@@ -213,10 +208,9 @@ async def update_profile(
 
     except Exception as e:
         import traceback
-
-        print("\n========== PROFILE UPDATE ERROR ==========")
         traceback.print_exc()
-        print("==========================================\n")
+
+        logger.error(f"Profile update failed: {str(e)}")
 
         raise HTTPException(
             status_code=500,
@@ -224,16 +218,15 @@ async def update_profile(
         )
 
 
-# ----------------------------
+# -------------------------------------------------
 # Change Password
-# ----------------------------
+# -------------------------------------------------
 @router.put("/change-password")
 async def change_password(
     password_data: ChangePassword,
     current_user=Depends(get_current_user)
 ):
     try:
-
         if not verify_password(
             password_data.current_password,
             current_user["hashed_password"]
@@ -256,6 +249,10 @@ async def change_password(
             }
         )
 
+        logger.info(
+            f"Password changed for: {current_user['email']}"
+        )
+
         return {
             "message": "Password changed successfully"
         }
@@ -265,10 +262,9 @@ async def change_password(
 
     except Exception as e:
         import traceback
-
-        print("\n========== CHANGE PASSWORD ERROR ==========")
         traceback.print_exc()
-        print("===========================================\n")
+
+        logger.error(f"Password change failed: {str(e)}")
 
         raise HTTPException(
             status_code=500,

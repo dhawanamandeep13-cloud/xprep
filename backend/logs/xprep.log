@@ -1,0 +1,32 @@
+2026-08-02 15:41:58,158 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 15:41:58,159 | INFO | server | MongoDB URL configured: Yes
+2026-08-02 15:41:58,160 | INFO | server | Gemini API Key configured: Yes
+2026-08-02 15:43:56,156 | INFO | xprep | Register endpoint called
+2026-08-02 15:45:03,332 | INFO | xprep | Register endpoint called
+2026-08-02 15:45:04,349 | INFO | xprep | New user registered: manya12345@test.com
+2026-08-02 15:45:50,367 | INFO | xprep | Login endpoint called
+2026-08-02 15:45:51,140 | INFO | xprep | User logged in: manya12345@test.com
+2026-08-02 16:12:26,789 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 16:12:26,789 | INFO | server | MongoDB configured: Yes
+2026-08-02 16:12:26,791 | INFO | server | Gemini API configured: Yes
+2026-08-02 16:14:44,265 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 16:14:44,265 | INFO | server | MongoDB configured: Yes
+2026-08-02 16:14:44,267 | INFO | server | Gemini API configured: Yes
+2026-08-02 16:17:11,400 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 16:17:11,400 | INFO | server | MongoDB configured: Yes
+2026-08-02 16:17:11,401 | INFO | server | Gemini API configured: Yes
+2026-08-02 16:20:43,529 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 16:20:43,529 | INFO | server | MongoDB configured: Yes
+2026-08-02 16:20:43,529 | INFO | server | Gemini API configured: Yes
+2026-08-02 16:25:54,262 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 16:25:54,262 | INFO | server | MongoDB configured: Yes
+2026-08-02 16:25:54,263 | INFO | server | Gemini API configured: Yes
+2026-08-02 16:29:25,283 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 16:29:25,283 | INFO | server | MongoDB configured: Yes
+2026-08-02 16:29:25,283 | INFO | server | Gemini API configured: Yes
+2026-08-02 16:35:36,987 | INFO | xprep | Register endpoint called
+2026-08-02 16:37:01,717 | INFO | xprep | Login endpoint called
+2026-08-02 16:37:02,178 | INFO | xprep | User logged in: manya@test.com
+2026-08-02 16:40:40,229 | INFO | xprep | Register endpoint called
+2026-08-02 16:41:11,156 | INFO | xprep | Login endpoint called
+2026-08-02 16:41:11,615 | INFO | xprep | User logged in: manya@test.com
