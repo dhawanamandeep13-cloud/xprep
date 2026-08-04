@@ -30,3 +30,23 @@
 2026-08-02 16:40:40,229 | INFO | xprep | Register endpoint called
 2026-08-02 16:41:11,156 | INFO | xprep | Login endpoint called
 2026-08-02 16:41:11,615 | INFO | xprep | User logged in: manya@test.com
+2026-08-04 21:51:16,023 | INFO | server | Xprep AI Platform API started successfully
+2026-08-04 21:51:16,038 | INFO | server | MongoDB configured: Yes
+2026-08-04 21:51:16,038 | INFO | server | Gemini API configured: Yes
+2026-08-04 21:52:21,864 | INFO | xprep | Register endpoint called
+2026-08-04 21:55:36,546 | INFO | xprep | Login endpoint called
+2026-08-04 21:59:13,865 | INFO | xprep | Register endpoint called
+2026-08-04 21:59:35,024 | INFO | xprep | Register endpoint called
+2026-08-04 21:59:36,015 | INFO | xprep | New user registered: manya56789@test.com
+2026-08-04 22:04:17,827 | INFO | xprep | Login endpoint called
+2026-08-04 22:04:18,831 | INFO | xprep | User logged in: manya56789@test.com
+2026-08-04 22:08:49,946 | INFO | xprep | Login endpoint called
+2026-08-04 22:08:50,886 | INFO | xprep | User logged in: manya56789@test.com
+2026-08-04 22:09:55,234 | INFO | xprep | Profile viewed: manya56789@test.com
+2026-08-04 22:19:42,304 | INFO | xprep | Profile updated: manya56789@test.com
+2026-08-04 22:21:22,274 | INFO | xprep | Password changed for: manya56789@test.com
+2026-08-04 22:22:56,804 | INFO | xprep | Login endpoint called
+2026-08-04 22:22:57,747 | INFO | xprep | User logged in: manya56789@test.com
+2026-08-04 22:36:58,338 | INFO | xprep | Profile viewed: manya56789@test.com
+2026-08-04 22:57:27,894 | INFO | xprep | Login endpoint called
+2026-08-04 22:57:28,804 | INFO | xprep | User logged in: manya56789@test.com
