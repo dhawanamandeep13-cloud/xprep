@@ -21,6 +21,7 @@ from routes.interview import router as interview_router
 from routes.resume import router as resume_router
 from routes.jobs import router as jobs_router
 from routes.auth import router as auth_router
+from routes.payments import router as payments_router
 
 # -------------------------------------------------
 # App
@@ -47,6 +48,7 @@ api_router.include_router(interview_router)
 api_router.include_router(resume_router)
 api_router.include_router(jobs_router)
 api_router.include_router(auth_router)
+api_router.include_router(payments_router)
 
 app.include_router(api_router)
 
