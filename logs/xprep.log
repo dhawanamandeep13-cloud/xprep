@@ -1,0 +1,3 @@
+2026-08-02 15:36:50,762 | INFO | server | Xprep AI Platform API started successfully
+2026-08-02 15:36:50,762 | INFO | server | MongoDB URL configured: Yes
+2026-08-02 15:36:50,763 | INFO | server | Gemini API Key configured: Yes
