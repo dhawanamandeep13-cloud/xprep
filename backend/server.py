@@ -5,7 +5,7 @@ import logging
 from dotenv import load_dotenv
 
 # -------------------------------------------------
-# Load .env FIRST (before importing database/routes)
+# Load .env FIRST
 # -------------------------------------------------
 ROOT_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT_DIR / ".env")
@@ -14,21 +14,17 @@ from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
 
 # Database
-from database import client, db
+from database import client
 
 # Routes
 from routes.interview import router as interview_router
 from routes.resume import router as resume_router
 from routes.jobs import router as jobs_router
-
-print("ABOUT TO IMPORT AUTH")
-
 from routes.auth import router as auth_router
-
-print("AUTH IMPORT FINISHED")
+from routes.payments import router as payments_router
 
 # -------------------------------------------------
-# FastAPI App
+# App
 # -------------------------------------------------
 
 app = FastAPI(
@@ -47,11 +43,12 @@ async def root():
     }
 
 
-# Register routers
+# Register Routers
 api_router.include_router(interview_router)
 api_router.include_router(resume_router)
 api_router.include_router(jobs_router)
 api_router.include_router(auth_router)
+api_router.include_router(payments_router)
 
 app.include_router(api_router)
 
@@ -75,31 +72,35 @@ app.add_middleware(
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("server")
 
 
 # -------------------------------------------------
-# Events
+# Startup / Shutdown
 # -------------------------------------------------
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("Xprep AI Platform API started successfully")
     logger.info(
-        f"MongoDB URL configured: {'Yes' if os.getenv('MONGO_URL') else 'No'}"
+        f"MongoDB configured: {'Yes' if os.getenv('MONGO_URL') else 'No'}"
     )
     logger.info(
-        f"Gemini API Key configured: {'Yes' if os.getenv('GEMINI_API_KEY') else 'No'}"
+        f"Gemini API configured: {'Yes' if os.getenv('GEMINI_API_KEY') else 'No'}"
     )
 
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_event():
     client.close()
 
+
+# -------------------------------------------------
+# Run
+# -------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn
