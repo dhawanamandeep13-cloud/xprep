@@ -59,9 +59,11 @@ class ATSAnalysis(BaseModel):
 
 class JobPreferences(BaseModel):
     role: str
-    location: str
-    experience_level: str
-    job_type: str
+    location: str = "India"
+    experience_level: str = "mid"
+    job_type: str = "full-time"
+    skills: List[str] = Field(default_factory=list)
+    work_mode: str = "any"
 
 
 class JobSearchRequest(BaseModel):
@@ -79,6 +81,9 @@ class JobListing(BaseModel):
     salary: Optional[str] = ""
     job_type: Optional[str] = ""
     posted: Optional[str] = ""
+    apply_url: Optional[str] = ""
+    description: Optional[str] = ""
+    source: Optional[str] = ""
 
 
 # ---------------------------
