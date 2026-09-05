@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -154,25 +154,49 @@ const UploadTab = ({ onAnalysisComplete }) => {
 // FIX #1: All hooks moved to top of component (were previously mid-JSX or outside component)
 // FIX #2: rawCVText accepted as prop (was incorrectly referencing outer-scope variable)
 // FIX #6: Enhance CV buttons moved inside this component's return (were floating outside)
-const ATSResults = ({ results, rawCVText, jdText = '' }) => {
+const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => {
   const [enhancing, setEnhancing] = useState(false);
   const [enhancedCV, setEnhancedCV] = useState(null);
+  const [recommendationDecisions, setRecommendationDecisions] = useState({});
+
+  useEffect(() => {
+    setRecommendationDecisions({});
+    setEnhancedCV(null);
+  }, [results]);
 
   if (!results) return null;
 
   const score = results.ats_score ?? results.score ?? 0;
   const scoreColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600';
   const barColor = score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+  const actionableRecommendations = [
+    ...(results.recommendations || []).map((text, index) => ({ id: `recommendation-${index}`, text, type: 'Recommendation' })),
+    ...(results.rewrite_suggestions || []).map((text, index) => ({ id: `rewrite-${index}`, text, type: 'Rewrite suggestion' })),
+  ];
+  const approvedRecommendations = actionableRecommendations
+    .filter((item) => recommendationDecisions[item.id] === 'approved')
+    .map((item) => item.text);
+
+  const setRecommendationDecision = (id, decision) => {
+    setRecommendationDecisions((current) => ({ ...current, [id]: decision }));
+    setEnhancedCV(null);
+  };
 
   const handleEnhanceCV = async () => {
     if (!rawCVText) return alert("CV text missing");
+    if (!approvedRecommendations.length) {
+      alert('Approve at least one recommendation before incorporating changes into your CV.');
+      return;
+    }
     setEnhancing(true);
     try {
       const res = await APIService.enhanceCV({
         cvText: rawCVText,
         jdText,
-        missingKeywords: results?.missing_keywords || [],
-        recommendations: results?.recommendations || [],
+        // Keywords are only added when an approved recommendation calls for them.
+        // This prevents the AI from adding every missing keyword without consent.
+        missingKeywords: [],
+        recommendations: approvedRecommendations,
       });
       setEnhancedCV(res.enhanced_cv || res.enhancedCV);
     } catch (err) {
@@ -265,19 +289,40 @@ const ATSResults = ({ results, rawCVText, jdText = '' }) => {
           </div>
         )}
 
-        {/* Recommendations */}
-        {results.recommendations?.length > 0 && (
+        {/* Recommendation review */}
+        {actionableRecommendations.length > 0 && (
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">💡 Recommendations</p>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Review AI recommendations</p>
+                <p className="text-xs text-gray-500 mt-1">Approve only the changes you want. Nothing is added to the CV until you incorporate approved changes.</p>
+              </div>
+              <Badge className="shrink-0 bg-green-100 text-green-800 text-xs">{approvedRecommendations.length} approved</Badge>
+            </div>
             <ul className="space-y-2">
-              {results.recommendations.map((s, i) => (
-                <li key={i} className="flex items-start text-sm text-gray-700 bg-blue-50 rounded-lg px-3 py-2">
+              {actionableRecommendations.map((item, i) => {
+                const decision = recommendationDecisions[item.id];
+                return (
+                <li key={item.id} className={`rounded-lg border px-3 py-3 ${decision === 'approved' ? 'border-green-200 bg-green-50' : decision === 'rejected' ? 'border-gray-200 bg-gray-50 opacity-70' : 'border-blue-100 bg-blue-50'}`}>
+                  <div className="flex items-start text-sm text-gray-700">
                   <span className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0 bg-blue-600 text-white rounded-full text-xs flex items-center justify-center font-bold">
                     {i + 1}
                   </span>
-                  {s}
+                  <div className="flex-1">
+                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-blue-700 mb-1">{item.type}</span>
+                    {item.text}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <Button size="sm" onClick={() => setRecommendationDecision(item.id, 'approved')} className={decision === 'approved' ? 'bg-green-700 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'}>
+                        <Check className="w-3.5 h-3.5 mr-1" /> {decision === 'approved' ? 'Approved' : 'Approve & include'}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setRecommendationDecision(item.id, 'rejected')} className="text-gray-600">
+                        <X className="w-3.5 h-3.5 mr-1" /> {decision === 'rejected' ? 'Rejected' : 'Reject'}
+                      </Button>
+                    </div>
+                  </div>
+                  </div>
                 </li>
-              ))}
+              )})}
             </ul>
           </div>
         )}
@@ -336,15 +381,16 @@ const ATSResults = ({ results, rawCVText, jdText = '' }) => {
         <div className="pt-4 border-t">
           <Button
             onClick={handleEnhanceCV}
-            disabled={enhancing}
+            disabled={enhancing || !approvedRecommendations.length}
             className="w-full bg-green-600 hover:bg-green-700"
           >
             {enhancing ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enhancing...</>
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Incorporating approved changes...</>
             ) : (
-              <><Sparkles className="w-4 h-4 mr-2" /> Enhance My CV with AI</>
+              <><Sparkles className="w-4 h-4 mr-2" /> Incorporate {approvedRecommendations.length} approved change{approvedRecommendations.length === 1 ? '' : 's'}</>
             )}
           </Button>
+          {!approvedRecommendations.length && <p className="text-xs text-center text-gray-500 mt-2">Approve one or more recommendations to continue.</p>}
         </div>
 
         {/* Enhanced CV Output */}
@@ -362,6 +408,15 @@ const ATSResults = ({ results, rawCVText, jdText = '' }) => {
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
+            {onReplaceWorkingCV && (
+              <Button
+                onClick={() => onReplaceWorkingCV(enhancedCV)}
+                variant="outline"
+                className="w-full mt-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                <Check className="w-4 h-4 mr-2" /> Use this as my working CV
+              </Button>
+            )}
           </>
         )}
 
@@ -424,6 +479,13 @@ const ResumeBuilder = () => {
   const [atsResults, setATSResults] = useState(null);
 
   const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+  const useEnhancedCVAsWorkingCopy = (enhancedText) => {
+    setRawCVText(enhancedText);
+    setCvjdCvText(enhancedText);
+    setCvjdCvFileName('Enhanced CV (working copy)');
+    setSectionError(null);
+  };
 
   const handleCVJDFile = async (file, type) => {
     if (!file) return;
@@ -605,7 +667,7 @@ const ResumeBuilder = () => {
               </div>
               <div>
                 {atsResults
-                  ? <ATSResults results={atsResults} rawCVText={rawCVText} />
+                  ? <ATSResults results={atsResults} rawCVText={rawCVText} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
                   : (
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
                       <CardContent className="pt-6 text-center">
@@ -700,7 +762,7 @@ const ResumeBuilder = () => {
               </div>
               <div>
                 {atsResults
-                  ? <ATSResults results={atsResults} rawCVText={cvjdCvText || rawCVText} jdText={cvjdText} />
+                  ? <ATSResults results={atsResults} rawCVText={cvjdCvText || rawCVText} jdText={cvjdText} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
                   : (
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
                       <CardContent className="pt-6 text-center">
@@ -941,7 +1003,7 @@ const ResumeBuilder = () => {
                   </CardHeader>
                   <CardContent>
                     {atsResults ? (
-                      <ATSResults results={atsResults} rawCVText={rawCVText} />
+                      <ATSResults results={atsResults} rawCVText={rawCVText} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
                     ) : (
                       <div className="text-center">
                         <p className="text-sm text-gray-600 mb-4">Check how well your resume matches your target role's ATS requirements</p>

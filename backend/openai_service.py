@@ -361,7 +361,8 @@ Return ONLY JSON:
 You are a senior resume writer.
 
 Rewrite and enhance the CV for the job description while staying truthful to the candidate's original experience.
-Add missing keywords only where they fit naturally. Improve summary, skills, and bullets for ATS clarity.
+Apply ONLY the candidate-approved recommendations listed below. Do not apply or invent changes from any other possible recommendations.
+Add missing keywords only where they fit naturally and only when supported by the original CV. Improve summary, skills, and bullets for ATS clarity.
 
 Original CV:
 {cv_text}
