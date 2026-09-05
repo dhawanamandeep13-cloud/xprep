@@ -157,11 +157,13 @@ const UploadTab = ({ onAnalysisComplete }) => {
 const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => {
   const [enhancing, setEnhancing] = useState(false);
   const [enhancedCV, setEnhancedCV] = useState(null);
+  const [enhancementWarning, setEnhancementWarning] = useState(null);
   const [recommendationDecisions, setRecommendationDecisions] = useState({});
 
   useEffect(() => {
     setRecommendationDecisions({});
     setEnhancedCV(null);
+    setEnhancementWarning(null);
   }, [results]);
 
   if (!results) return null;
@@ -172,6 +174,7 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
   const actionableRecommendations = [
     ...(results.recommendations || []).map((text, index) => ({ id: `recommendation-${index}`, text, type: 'Recommendation' })),
     ...(results.rewrite_suggestions || []).map((text, index) => ({ id: `rewrite-${index}`, text, type: 'Rewrite suggestion' })),
+    ...(results.missing_cv_points || []).map((text, index) => ({ id: `gap-${index}`, text, type: 'JD gap to address' })),
   ];
   const approvedRecommendations = actionableRecommendations
     .filter((item) => recommendationDecisions[item.id] === 'approved')
@@ -180,6 +183,7 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
   const setRecommendationDecision = (id, decision) => {
     setRecommendationDecisions((current) => ({ ...current, [id]: decision }));
     setEnhancedCV(null);
+    setEnhancementWarning(null);
   };
 
   const handleEnhanceCV = async () => {
@@ -199,6 +203,7 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         recommendations: approvedRecommendations,
       });
       setEnhancedCV(res.enhanced_cv || res.enhancedCV);
+      setEnhancementWarning(res.warning || null);
     } catch (err) {
       alert(err.message || "Enhancement failed");
     } finally {
@@ -209,8 +214,21 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
   const handleDownloadPDF = () => {
     if (!enhancedCV) return;
     const doc = new jsPDF();
-    const lines = doc.splitTextToSize(enhancedCV, 180);
-    doc.text(lines, 10, 10);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 16;
+    const lineHeight = 5.5;
+    const lines = doc.splitTextToSize(enhancedCV, 178);
+    let y = margin;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    lines.forEach((line) => {
+      if (y + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += lineHeight;
+    });
     doc.save("Enhanced_CV.pdf");
   };
 
@@ -318,6 +336,9 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
                       <Button size="sm" variant="outline" onClick={() => setRecommendationDecision(item.id, 'rejected')} className="text-gray-600">
                         <X className="w-3.5 h-3.5 mr-1" /> {decision === 'rejected' ? 'Rejected' : 'Reject'}
                       </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setRecommendationDecision(item.id, 'ignored')} className="text-gray-500">
+                        {decision === 'ignored' ? 'Ignored' : 'Ignore'}
+                      </Button>
                     </div>
                   </div>
                   </div>
@@ -396,9 +417,18 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         {/* Enhanced CV Output */}
         {enhancedCV && (
           <>
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg text-sm whitespace-pre-line">
-              <p className="font-semibold mb-2">✨ Enhanced CV</p>
-              {enhancedCV}
+            {enhancementWarning && (
+              <div className="mt-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {enhancementWarning}
+              </div>
+            )}
+            <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+              <p className="font-semibold mb-1">✨ Complete enhanced CV</p>
+              <p className="text-xs text-gray-500 mb-3">Review the full CV below before saving or downloading it.</p>
+              <div className="max-h-[34rem] overflow-y-auto whitespace-pre-wrap rounded-md bg-gray-50 p-4 font-mono text-sm leading-6 text-gray-800">
+                {enhancedCV}
+              </div>
             </div>
             <Button
               onClick={handleDownloadPDF}

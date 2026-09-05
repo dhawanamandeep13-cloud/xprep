@@ -364,6 +364,12 @@ Rewrite and enhance the CV for the job description while staying truthful to the
 Apply ONLY the candidate-approved recommendations listed below. Do not apply or invent changes from any other possible recommendations.
 Add missing keywords only where they fit naturally and only when supported by the original CV. Improve summary, skills, and bullets for ATS clarity.
 
+Non-negotiable output requirements:
+1. Return the COMPLETE revised CV, never a list of changes, an excerpt, or a short summary.
+2. Retain every original section, employment entry, education entry, credential, contact detail, and achievement unless an approved recommendation explicitly asks to remove it.
+3. Keep the original section order, headings, and bullet-style structure wherever the extracted CV provides them.
+4. Make only the approved edits in context, so the result can replace the original CV as a complete document.
+
 Original CV:
 {cv_text}
 
@@ -383,7 +389,18 @@ Return ONLY JSON:
 """
         try:
             text = call_gemini(prompt)
-            return extract_json(text)
+            result = extract_json(text)
+            enhanced_cv = str(result.get("enhanced_cv", "")).strip()
+
+            # A changes-only response is unsafe to present as a replacement CV.
+            # Keep the original intact and ask the user to retry instead.
+            if len(enhanced_cv) < max(200, int(len(cv_text.strip()) * 0.60)):
+                return {
+                    "enhanced_cv": cv_text.strip(),
+                    "warning": "The AI returned an incomplete CV, so your original CV was kept unchanged. Please retry the approved changes."
+                }
+
+            return {"enhanced_cv": enhanced_cv}
         except Exception as e:
             print("⚠️ Falling back to deterministic CV enhancement:", str(e))
             return fallback_enhanced_cv(cv_text, missing_keywords, recommendations)
