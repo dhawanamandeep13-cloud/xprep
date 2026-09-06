@@ -57,7 +57,7 @@ const UploadTab = ({ onAnalysisComplete }) => {
     try {
       const { text } = await APIService.extractResumeText(file);
       const result = await APIService.analyzeATS(text, targetRole);
-      onAnalysisComplete(result, text);
+      onAnalysisComplete(result, text, targetRole);
     } catch (err) {
       setError(err.message || 'Failed to analyze resume. Please try again.');
     } finally {
@@ -154,21 +154,28 @@ const UploadTab = ({ onAnalysisComplete }) => {
 // FIX #1: All hooks moved to top of component (were previously mid-JSX or outside component)
 // FIX #2: rawCVText accepted as prop (was incorrectly referencing outer-scope variable)
 // FIX #6: Enhance CV buttons moved inside this component's return (were floating outside)
-const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => {
+const ATSResults = ({ results, rawCVText, jdText = '', targetRole, onReplaceWorkingCV }) => {
   const [enhancing, setEnhancing] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const [enhancedCV, setEnhancedCV] = useState(null);
   const [enhancementWarning, setEnhancementWarning] = useState(null);
+  const [reanalysisMessage, setReanalysisMessage] = useState(null);
+  const [updatedResults, setUpdatedResults] = useState(null);
   const [recommendationDecisions, setRecommendationDecisions] = useState({});
 
   useEffect(() => {
     setRecommendationDecisions({});
     setEnhancedCV(null);
     setEnhancementWarning(null);
+    setReanalysisMessage(null);
+    setUpdatedResults(null);
   }, [results]);
 
   if (!results) return null;
 
-  const score = results.ats_score ?? results.score ?? 0;
+  const displayedResults = updatedResults || results;
+  const originalScore = results.ats_score ?? results.score ?? 0;
+  const score = displayedResults.ats_score ?? displayedResults.score ?? 0;
   const scoreColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600';
   const barColor = score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
   const actionableRecommendations = [
@@ -202,8 +209,26 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         missingKeywords: [],
         recommendations: approvedRecommendations,
       });
-      setEnhancedCV(res.enhanced_cv || res.enhancedCV);
+      const enhancedText = res.enhanced_cv || res.enhancedCV;
+      setEnhancedCV(enhancedText);
       setEnhancementWarning(res.warning || null);
+      setReanalyzing(true);
+      setReanalysisMessage(null);
+      try {
+        const refreshedAnalysis = await APIService.analyzeATS(enhancedText, targetRole || 'Target role');
+        setUpdatedResults(refreshedAnalysis);
+        const refreshedScore = refreshedAnalysis.ats_score ?? refreshedAnalysis.score ?? 0;
+        const difference = refreshedScore - originalScore;
+        setReanalysisMessage(difference > 0
+          ? `ATS score updated: +${difference} points after incorporating your approved changes.`
+          : difference < 0
+            ? `ATS score was recalculated after incorporating your approved changes (${difference} points). Review the updated recommendations for the next improvement.`
+            : 'ATS score was recalculated after incorporating your approved changes.');
+      } catch (analysisError) {
+        setReanalysisMessage('Your CV was updated, but its ATS score could not be recalculated just now. Please try again shortly.');
+      } finally {
+        setReanalyzing(false);
+      }
     } catch (err) {
       alert(err.message || "Enhancement failed");
     } finally {
@@ -252,14 +277,16 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
               style={{ width: `${score}%` }}
             />
           </div>
+          {reanalyzing && <p className="mt-3 text-xs font-medium text-blue-700">Recalculating your ATS score from the revised CV...</p>}
+          {reanalysisMessage && <p className={`mt-3 rounded-md px-3 py-2 text-xs font-medium ${score > originalScore ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>{reanalysisMessage}</p>}
         </div>
 
         {/* Section Scores */}
-        {results.section_scores && (
+        {displayedResults.section_scores && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">📊 Section Breakdown</p>
             <div className="space-y-2">
-              {Object.entries(results.section_scores).map(([section, pct]) => (
+              {Object.entries(displayedResults.section_scores).map(([section, pct]) => (
                 <div key={section} className="flex items-center gap-2">
                   <span className="text-xs text-gray-600 capitalize w-20">{section}</span>
                   <div className="flex-1 bg-gray-200 rounded-full h-1.5">
@@ -278,11 +305,11 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         )}
 
         {/* Strengths */}
-        {results.strengths?.length > 0 && (
+        {displayedResults.strengths?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">✅ Strengths</p>
             <ul className="space-y-2">
-              {results.strengths.map((s, i) => (
+              {displayedResults.strengths.map((s, i) => (
                 <li key={i} className="flex items-start text-sm text-gray-700 bg-green-50 rounded-lg px-3 py-2">
                   <Check className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
                   {s}
@@ -293,11 +320,11 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         )}
 
         {/* Improvements */}
-        {results.improvements?.length > 0 && (
+        {displayedResults.improvements?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">⚠️ Areas to Improve</p>
             <ul className="space-y-2">
-              {results.improvements.map((s, i) => (
+              {displayedResults.improvements.map((s, i) => (
                 <li key={i} className="flex items-start text-sm text-gray-700 bg-yellow-50 rounded-lg px-3 py-2">
                   <span className="mr-2 mt-0.5 flex-shrink-0">⚠️</span>
                   {s}
@@ -349,11 +376,11 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         )}
 
         {/* Matched Keywords */}
-        {results.matched_keywords?.length > 0 && (
+        {displayedResults.matched_keywords?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">✅ Matched Keywords</p>
             <div className="flex flex-wrap gap-1.5">
-              {results.matched_keywords.map((kw, i) => (
+              {displayedResults.matched_keywords.map((kw, i) => (
                 <Badge key={i} className="bg-green-100 text-green-800 text-xs">{kw}</Badge>
               ))}
             </div>
@@ -361,22 +388,22 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
         )}
 
         {/* Missing Keywords */}
-        {results.missing_keywords?.length > 0 && (
+        {displayedResults.missing_keywords?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">⚠️ Missing Keywords</p>
             <div className="flex flex-wrap gap-1.5">
-              {results.missing_keywords.map((kw, i) => (
+              {displayedResults.missing_keywords.map((kw, i) => (
                 <Badge key={i} className="bg-red-100 text-red-800 text-xs">{kw}</Badge>
               ))}
             </div>
           </div>
         )}
 
-        {results.missing_cv_points?.length > 0 && (
+        {displayedResults.missing_cv_points?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">CV Gaps Against JD</p>
             <ul className="space-y-2">
-              {results.missing_cv_points.map((item, i) => (
+              {displayedResults.missing_cv_points.map((item, i) => (
                 <li key={i} className="text-sm text-gray-700 bg-red-50 rounded-lg px-3 py-2">
                   {item}
                 </li>
@@ -385,11 +412,11 @@ const ATSResults = ({ results, rawCVText, jdText = '', onReplaceWorkingCV }) => 
           </div>
         )}
 
-        {results.rewrite_suggestions?.length > 0 && (
+        {displayedResults.rewrite_suggestions?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Rewrite Suggestions</p>
             <ul className="space-y-2">
-              {results.rewrite_suggestions.map((item, i) => (
+              {displayedResults.rewrite_suggestions.map((item, i) => (
                 <li key={i} className="text-sm text-gray-700 bg-indigo-50 rounded-lg px-3 py-2">
                   {item}
                 </li>
@@ -687,9 +714,10 @@ const ResumeBuilder = () => {
                   </CardHeader>
                   <CardContent>
                     <UploadTab
-                      onAnalysisComplete={(result, text) => {
+                      onAnalysisComplete={(result, text, targetRole) => {
                         setATSResults(result);
                         setRawCVText(text);
+                        setRole(targetRole);
                       }}
                     />
                   </CardContent>
@@ -697,7 +725,7 @@ const ResumeBuilder = () => {
               </div>
               <div>
                 {atsResults
-                  ? <ATSResults results={atsResults} rawCVText={rawCVText} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
+                  ? <ATSResults results={atsResults} rawCVText={rawCVText} targetRole={role} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
                   : (
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
                       <CardContent className="pt-6 text-center">
@@ -792,7 +820,7 @@ const ResumeBuilder = () => {
               </div>
               <div>
                 {atsResults
-                  ? <ATSResults results={atsResults} rawCVText={cvjdCvText || rawCVText} jdText={cvjdText} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
+                  ? <ATSResults results={atsResults} rawCVText={cvjdCvText || rawCVText} jdText={cvjdText} targetRole={role} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
                   : (
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
                       <CardContent className="pt-6 text-center">
@@ -1033,7 +1061,7 @@ const ResumeBuilder = () => {
                   </CardHeader>
                   <CardContent>
                     {atsResults ? (
-                      <ATSResults results={atsResults} rawCVText={rawCVText} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
+                      <ATSResults results={atsResults} rawCVText={rawCVText} targetRole={role} onReplaceWorkingCV={useEnhancedCVAsWorkingCopy} />
                     ) : (
                       <div className="text-center">
                         <p className="text-sm text-gray-600 mb-4">Check how well your resume matches your target role's ATS requirements</p>
