@@ -60,15 +60,21 @@ class ATSAnalysis(BaseModel):
 class JobPreferences(BaseModel):
     role: str
     location: str = "India"
+    country: str = "India"
+    state: str = ""
     experience_level: str = "mid"
     job_type: str = "full-time"
     skills: List[str] = Field(default_factory=list)
     work_mode: str = "any"
+    industry: str = ""
+    domain: str = ""
 
 
 class JobSearchRequest(BaseModel):
     preferences: JobPreferences
     resume_data: Optional[Dict[str, Any]] = None
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=15, ge=5, le=25)
 
 
 class JobListing(BaseModel):

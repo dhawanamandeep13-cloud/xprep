@@ -126,12 +126,13 @@ const APIService = {
     });
   },
 
-  searchJobs(preferences, resumeData = {}) {
+  searchJobs(preferences, page = 1, pageSize = 15) {
     return request("/jobs/search", {
       method: "POST",
       body: JSON.stringify({
         preferences,
-        resume_data: resumeData,
+        page,
+        page_size: pageSize,
       }),
     });
   },
