@@ -74,7 +74,9 @@ class JobSearchRequest(BaseModel):
     preferences: JobPreferences
     resume_data: Optional[Dict[str, Any]] = None
     page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=15, ge=5, le=25)
+    # Keep individual requests bounded while allowing users to browse a useful
+    # number of opportunities per page.
+    page_size: int = Field(default=25, ge=5, le=30)
 
 
 class JobListing(BaseModel):

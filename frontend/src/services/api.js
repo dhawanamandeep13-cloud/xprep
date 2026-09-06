@@ -126,7 +126,7 @@ const APIService = {
     });
   },
 
-  searchJobs(preferences, page = 1, pageSize = 15) {
+  searchJobs(preferences, page = 1, pageSize = 25) {
     return request("/jobs/search", {
       method: "POST",
       body: JSON.stringify({
