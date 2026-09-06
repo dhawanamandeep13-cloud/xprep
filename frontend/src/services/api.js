@@ -53,12 +53,13 @@ async function uploadFile(endpoint, file) {
 }
 
 const APIService = {
-  startMockInterview(interviewType, role = "General") {
+  startMockInterview(interviewType, role = "General", experienceLevel = "mid") {
     return request("/interview/mock/start", {
       method: "POST",
       body: JSON.stringify({
         interview_type: interviewType,
         role,
+        experience_level: experienceLevel,
       }),
     });
   },

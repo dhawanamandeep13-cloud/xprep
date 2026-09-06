@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "../config";
 import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -15,19 +14,27 @@ const MockInterview = () => {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [interviewType, setInterviewType] = useState('behavioral');
+  const [targetRole, setTargetRole] = useState('');
+  const [experienceLevel, setExperienceLevel] = useState('mid');
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const [nextQuestion, setNextQuestion] = useState(null);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
 
   const handleStartInterview = async () => {
     setIsLoading(true);
     try {
-      const data = await APIService.startMockInterview(interviewType);
+      const data = await APIService.startMockInterview(interviewType, targetRole || 'General professional', experienceLevel);
       setSessionId(data.session_id);
       setCurrentQuestion(data.question);
       setFeedback(null);
       setAnswer('');
       setQuestionsAnswered(0);
+      setNextQuestion(null);
+      setTotalQuestions(data.total_questions || 0);
+      setIsComplete(false);
       toast({
         title: "Interview Started!",
         description: "Answer the question to get AI-powered feedback.",
@@ -62,12 +69,9 @@ const MockInterview = () => {
     try {
       const data = await APIService.submitAnswer(sessionId, currentQuestion.id, answer);
       setFeedback(data.feedback);
-      setQuestionsAnswered(prev => prev + 1);
-      
-      if (data.next_question) {
-        setCurrentQuestion(data.next_question);
-        setAnswer('');
-      }
+      setQuestionsAnswered(data.answered_count ?? (questionsAnswered + 1));
+      setNextQuestion(data.next_question || null);
+      setIsComplete(Boolean(data.completed));
       
       toast({
         title: "Feedback Received!",
@@ -85,8 +89,10 @@ const MockInterview = () => {
   };
 
   const handleNextQuestion = async () => {
+    if (nextQuestion) setCurrentQuestion(nextQuestion);
     setAnswer('');
     setFeedback(null);
+    setNextQuestion(null);
   };
 
   return (
@@ -121,6 +127,19 @@ const MockInterview = () => {
                           <SelectItem value="technical">Technical Interview</SelectItem>
                           <SelectItem value="case">Case Interview</SelectItem>
                           <SelectItem value="general">General Interview</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div>
+                        <label htmlFor="target-role" className="mb-1 block text-sm font-medium text-gray-700">Target role</label>
+                        <input id="target-role" value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Financial Analyst" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                      </div>
+                      <Select value={experienceLevel} onValueChange={setExperienceLevel}>
+                        <SelectTrigger className="w-full"><SelectValue placeholder="Experience level" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="entry">Fresher / Entry level</SelectItem>
+                          <SelectItem value="mid">Mid level</SelectItem>
+                          <SelectItem value="senior">Senior level</SelectItem>
+                          <SelectItem value="lead">Manager / Leadership</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button onClick={handleStartInterview} className="w-full" size="lg" disabled={isLoading}>
@@ -159,7 +178,7 @@ const MockInterview = () => {
                         value={answer}
                         onChange={(e) => setAnswer(e.target.value)}
                         className="resize-none"
-                        disabled={isLoading}
+                        disabled={isLoading || Boolean(feedback) || isComplete}
                       />
                       <div className="flex gap-2">
                         <Button
@@ -180,7 +199,7 @@ const MockInterview = () => {
                             </>
                           )}
                         </Button>
-                        <Button onClick={handleSubmitAnswer} disabled={!answer || isLoading} className="flex-1">
+                        <Button onClick={handleSubmitAnswer} disabled={!answer || isLoading || Boolean(feedback) || isComplete} className="flex-1">
                           {isLoading ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -190,7 +209,7 @@ const MockInterview = () => {
                             'Get AI Feedback'
                           )}
                         </Button>
-                        <Button variant="outline" onClick={handleNextQuestion} disabled={isLoading}>
+                        <Button variant="outline" onClick={handleNextQuestion} disabled={isLoading || !nextQuestion} title={nextQuestion ? 'Continue to the next question' : 'Submit your answer to unlock the next question'}>
                           <SkipForward className="w-4 h-4" />
                         </Button>
                       </div>
@@ -234,6 +253,11 @@ const MockInterview = () => {
                   </CardContent>
                 </Card>
               )}
+              {isComplete && (
+                <Card className="border-2 border-blue-200 bg-blue-50">
+                  <CardContent className="py-5 text-center"><p className="font-semibold text-blue-900">Interview complete</p><p className="mt-1 text-sm text-blue-800">You answered {questionsAnswered} question{questionsAnswered === 1 ? '' : 's'}. Start a new session to practise again.</p></CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sidebar */}
@@ -248,7 +272,7 @@ const MockInterview = () => {
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Questions Answered</span>
-                        <span className="font-semibold">{questionsAnswered}</span>
+                        <span className="font-semibold">{questionsAnswered}{totalQuestions ? ` / ${totalQuestions}` : ''}</span>
                       </div>
                     </div>
                     {sessionId && (

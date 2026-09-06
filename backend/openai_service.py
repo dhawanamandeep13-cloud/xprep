@@ -220,14 +220,110 @@ Recommended CV changes:
     return {"enhanced_cv": enhanced_cv}
 
 
+def fallback_interview_questions(interview_type: str, role: str, experience_level: str) -> List[Dict[str, str]]:
+    """Useful interview practice remains available when the AI provider is unavailable."""
+    category = interview_type.title()
+    templates = {
+        "behavioral": [
+            f"Tell me about yourself and why you are interested in this {role} role.",
+            f"Describe a challenging situation relevant to a {role} role and how you handled it.",
+            "Tell me about a time you received difficult feedback. What did you do next?",
+            "Describe a time you had competing priorities. How did you decide what to do first?",
+            "Tell me about an achievement you are proud of and the impact it created.",
+        ],
+        "technical": [
+            f"Which skills are most important for a {role}, and how have you applied them?",
+            "Walk me through how you would investigate and solve an unexpected problem.",
+            "How do you make sure your work is accurate, reliable, and easy for others to understand?",
+            "Describe a project where you had to learn a new tool, system, or process quickly.",
+            "How do you balance delivery speed with quality and risk management?",
+        ],
+        "case": [
+            f"A key metric for the {role} team falls by 15%. How would you structure your investigation?",
+            "How would you prioritize three initiatives when time, budget, and stakeholders disagree?",
+            "What data would you request before recommending a solution to a business problem?",
+            "Explain how you would measure whether an initiative was successful.",
+            "Present a recommendation to a senior stakeholder who is skeptical of your approach.",
+        ],
+    }
+    questions = templates.get(interview_type.lower(), templates["behavioral"])
+    return [
+        {
+            "text": question,
+            "category": category,
+            "difficulty": "Easy" if index == 0 else "Medium" if index < 4 else "Hard",
+        }
+        for index, question in enumerate(questions)
+    ]
+
+
+def fallback_interview_feedback(answer: str) -> Dict[str, Any]:
+    word_count = len(answer.split())
+    score = 45 if word_count < 35 else 62 if word_count < 90 else 76 if word_count < 180 else 82
+    strengths = ["You provided a direct response to the question."]
+    improvements = []
+    if word_count < 90:
+        improvements.append("Add a specific example with your actions and the result.")
+    else:
+        strengths.append("You gave enough detail to show your thinking.")
+    if not any(character.isdigit() for character in answer):
+        improvements.append("Where truthful, include a measurable outcome such as time saved, revenue, quality, or scale.")
+    if not improvements:
+        improvements.append("Make the link between your example and the target role explicit.")
+    return {
+        "score": score,
+        "strengths": strengths,
+        "improvements": improvements,
+        "suggestion": "Use STAR: briefly set the situation and task, explain your actions, and end with the measurable result.",
+    }
+
+
 class OpenAIService:
 
     @staticmethod
-    def generate_interview_feedback(question: str, answer: str) -> Dict[str, Any]:
+    def generate_interview_questions(interview_type: str, role: str, experience_level: str) -> List[Dict[str, str]]:
+        """Create a short, role-aware interview set and fall back safely if AI is unavailable."""
+        prompt = f"""
+You are an expert interviewer. Create exactly 5 {interview_type} interview questions for a
+{experience_level}-level candidate applying for {role}. Make questions specific, practical,
+and appropriate for the experience level.
+
+Return ONLY a JSON array. Each item must have:
+{{"text": string, "category": string, "difficulty": "Easy" | "Medium" | "Hard"}}
+"""
+        try:
+            questions = extract_json_array(call_gemini(prompt))
+            if not isinstance(questions, list) or len(questions) < 3:
+                raise ValueError("Gemini returned an incomplete question set")
+            normalized = [
+                {
+                    "text": str(item.get("text", "")).strip(),
+                    "category": str(item.get("category", interview_type.title())).strip(),
+                    "difficulty": str(item.get("difficulty", "Medium")).title(),
+                }
+                for item in questions[:5]
+                if isinstance(item, dict) and str(item.get("text", "")).strip()
+            ]
+            if len(normalized) < 3:
+                raise ValueError("Gemini returned unusable questions")
+            return normalized
+        except Exception as error:
+            print("⚠️ Falling back to interview question templates:", str(error))
+            return fallback_interview_questions(interview_type, role, experience_level)
+
+    @staticmethod
+    def generate_interview_feedback(
+        question: str,
+        answer: str,
+        role: str = "the target role",
+        interview_type: str = "general",
+    ) -> Dict[str, Any]:
 
         prompt = f"""
 You are an expert interview coach.
 
+Candidate's target role: {role}
+Interview type: {interview_type}
 Question: {question}
 Answer: {answer}
 
@@ -240,8 +336,11 @@ Return ONLY JSON:
 }}
 """
 
-        text = call_gemini(prompt)
-        return extract_json(text)
+        try:
+            return extract_json(call_gemini(prompt))
+        except Exception as error:
+            print("⚠️ Falling back to deterministic interview feedback:", str(error))
+            return fallback_interview_feedback(answer)
 
     @staticmethod
     def generate_resume_suggestions(
