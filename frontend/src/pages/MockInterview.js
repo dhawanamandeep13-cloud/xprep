@@ -1,12 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Mic, MicOff, SkipForward, RotateCcw, Loader2 } from 'lucide-react';
 import { toast } from '../hooks/use-toast';
 import APIService from '../services/api';
+
+const ROLE_GROUPS = [
+  {
+    label: 'Business & finance',
+    roles: ['Accountant', 'Business Analyst', 'Business Development Manager', 'Consultant', 'Data Analyst', 'Financial Analyst', 'Investment Banker', 'Marketing Manager', 'Operations Manager', 'Product Manager', 'Project Manager', 'Sales Manager'],
+  },
+  {
+    label: 'Technology',
+    roles: ['AI / Machine Learning Engineer', 'Cloud Engineer', 'Cybersecurity Analyst', 'Data Engineer', 'Data Scientist', 'DevOps Engineer', 'Frontend Developer', 'Full Stack Developer', 'IT Support Specialist', 'Mobile Developer', 'Product Designer (UX/UI)', 'QA Engineer', 'Software Engineer', 'Solutions Architect'],
+  },
+  {
+    label: 'People, legal & education',
+    roles: ['Attorney / Legal Counsel', 'Customer Success Manager', 'HR Manager', 'Recruiter', 'Teacher / Lecturer', 'Training and Development Specialist'],
+  },
+  {
+    label: 'Healthcare & science',
+    roles: ['Clinical Research Associate', 'Doctor', 'Laboratory Technician', 'Nurse', 'Pharmacist', 'Research Scientist'],
+  },
+  {
+    label: 'Engineering & skilled professions',
+    roles: ['Architect', 'Civil Engineer', 'Electrical Engineer', 'Mechanical Engineer', 'Supply Chain Manager', 'UX Researcher'],
+  },
+];
+
+const CUSTOM_ROLE_VALUE = 'custom';
 
 const MockInterview = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -15,6 +40,7 @@ const MockInterview = () => {
   const [feedback, setFeedback] = useState(null);
   const [interviewType, setInterviewType] = useState('behavioral');
   const [targetRole, setTargetRole] = useState('');
+  const [customRole, setCustomRole] = useState('');
   const [experienceLevel, setExperienceLevel] = useState('mid');
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,11 +48,25 @@ const MockInterview = () => {
   const [nextQuestion, setNextQuestion] = useState(null);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const recognitionRef = useRef(null);
+  const answerAtRecordingStartRef = useRef('');
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
 
   const handleStartInterview = async () => {
+    const role = targetRole === CUSTOM_ROLE_VALUE ? customRole.trim() : targetRole;
+    if (!role) {
+      toast({
+        title: 'Choose a target role',
+        description: 'Select a role from the list or choose Custom / Any Other Role and enter it.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const data = await APIService.startMockInterview(interviewType, targetRole || 'General professional', experienceLevel);
+      const data = await APIService.startMockInterview(interviewType, role, experienceLevel);
       setSessionId(data.session_id);
       setCurrentQuestion(data.question);
       setFeedback(null);
@@ -51,8 +91,55 @@ const MockInterview = () => {
   };
 
   const handleStartRecording = () => {
-    setIsRecording(!isRecording);
-    // Mock: In real implementation, this would use Web Speech API
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        title: 'Speech recognition is unavailable',
+        description: 'Use the latest Chrome or Edge browser, allow microphone access, or type your answer instead.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+    answerAtRecordingStartRef.current = answer.trim() ? `${answer.trim()} ` : '';
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+      for (let index = 0; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0].transcript;
+        if (event.results[index].isFinal) finalTranscript += transcript;
+        else interimTranscript += transcript;
+      }
+      setAnswer(`${answerAtRecordingStartRef.current}${finalTranscript}${interimTranscript}`.trim());
+    };
+    recognition.onerror = (event) => {
+      const message = event.error === 'not-allowed' || event.error === 'service-not-allowed'
+        ? 'Microphone access was blocked. Allow microphone permission in your browser and try again.'
+        : `Speech recognition stopped: ${event.error}. Please try again or type your answer.`;
+      toast({ title: 'Voice input unavailable', description: message, variant: 'destructive' });
+      setIsRecording(false);
+    };
+    recognition.onend = () => setIsRecording(false);
+
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      setIsRecording(true);
+      toast({ title: 'Listening…', description: 'Speak clearly. Your words will appear in the answer box.' });
+    } catch (error) {
+      setIsRecording(false);
+      toast({ title: 'Could not start voice input', description: 'Please try again after allowing microphone access.', variant: 'destructive' });
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -65,6 +152,7 @@ const MockInterview = () => {
       return;
     }
 
+    recognitionRef.current?.stop();
     setIsLoading(true);
     try {
       const data = await APIService.submitAnswer(sessionId, currentQuestion.id, answer);
@@ -129,9 +217,31 @@ const MockInterview = () => {
                           <SelectItem value="general">General Interview</SelectItem>
                         </SelectContent>
                       </Select>
-                      <div>
-                        <label htmlFor="target-role" className="mb-1 block text-sm font-medium text-gray-700">Target role</label>
-                        <input id="target-role" value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Financial Analyst" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                      <div className="space-y-3">
+                        <div>
+                          <label htmlFor="target-role" className="mb-1 block text-sm font-medium text-gray-700">Target role</label>
+                          <Select value={targetRole} onValueChange={setTargetRole}>
+                            <SelectTrigger id="target-role" className="w-full"><SelectValue placeholder="Choose your target role" /></SelectTrigger>
+                            <SelectContent>
+                              {ROLE_GROUPS.map((group) => (
+                                <SelectGroup key={group.label}>
+                                  <SelectLabel>{group.label}</SelectLabel>
+                                  {group.roles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+                                </SelectGroup>
+                              ))}
+                              <SelectGroup>
+                                <SelectLabel>Other</SelectLabel>
+                                <SelectItem value={CUSTOM_ROLE_VALUE}>Custom / Any Other Role</SelectItem>
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {targetRole === CUSTOM_ROLE_VALUE && (
+                          <div>
+                            <label htmlFor="custom-target-role" className="mb-1 block text-sm font-medium text-gray-700">Enter your target role</label>
+                            <input id="custom-target-role" value={customRole} onChange={(event) => setCustomRole(event.target.value)} placeholder="e.g. Sustainability Consultant" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" autoFocus />
+                          </div>
+                        )}
                       </div>
                       <Select value={experienceLevel} onValueChange={setExperienceLevel}>
                         <SelectTrigger className="w-full"><SelectValue placeholder="Experience level" /></SelectTrigger>
@@ -185,7 +295,7 @@ const MockInterview = () => {
                           variant={isRecording ? 'destructive' : 'outline'}
                           onClick={handleStartRecording}
                           className="flex-1"
-                          disabled={isLoading}
+                          disabled={isLoading || Boolean(feedback) || isComplete}
                         >
                           {isRecording ? (
                             <>
@@ -213,6 +323,7 @@ const MockInterview = () => {
                           <SkipForward className="w-4 h-4" />
                         </Button>
                       </div>
+                      <p className="text-xs text-gray-500">Voice input uses your browser’s speech recognition. Allow microphone access when prompted; Chrome and Edge provide the best support.</p>
                     </div>
                   </CardContent>
                 </Card>
