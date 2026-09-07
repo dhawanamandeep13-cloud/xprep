@@ -22,6 +22,7 @@ class ResumeSuggestionRequest(BaseModel):
 class CVJDRequest(BaseModel):
     cv_text: str
     jd_text: str
+    target_role: Optional[str] = "General professional"
 
 class EnhanceCVRequest(BaseModel):
     cv_text: str
@@ -119,10 +120,12 @@ async def compare_cv_jd(request: CVJDRequest):
             raise HTTPException(status_code=422, detail="CV text is required")
         if not request.jd_text.strip():
             raise HTTPException(status_code=422, detail="Job description text is required")
+        target_role = (request.target_role or "General professional").strip() or "General professional"
 
         return OpenAIService.compare_cv_to_jd(
             cv_text=request.cv_text,
-            jd_text=request.jd_text
+            jd_text=request.jd_text,
+            target_role=target_role
         )
     except HTTPException:
         raise

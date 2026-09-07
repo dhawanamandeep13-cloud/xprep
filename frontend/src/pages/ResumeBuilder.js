@@ -5,10 +5,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../components/ui/select';
 import jsPDF from "jspdf";
 import {
   FileText, Download, Sparkles, Check, Upload,
-  Loader2, AlertCircle, X, User, Briefcase, GraduationCap, Wrench
+  Loader2, AlertCircle, X, User, Briefcase, GraduationCap, Wrench, Mic, MicOff
 } from 'lucide-react';
 import APIService from '../services/api';
 
@@ -23,11 +24,141 @@ const isSupportedUploadFile = (file) => {
   return supportedUploadTypes.includes(file?.type) || name.endsWith('.pdf') || name.endsWith('.docx') || name.endsWith('.txt');
 };
 
+const ROLE_GROUPS = [
+  { label: 'Business & finance', roles: ['Accountant', 'Business Analyst', 'Business Development Manager', 'Consultant', 'Data Analyst', 'Financial Analyst', 'Investment Banker', 'Marketing Manager', 'Operations Manager', 'Product Manager', 'Project Manager', 'Sales Manager'] },
+  { label: 'Technology', roles: ['AI / Machine Learning Engineer', 'Cloud Engineer', 'Cybersecurity Analyst', 'Data Engineer', 'Data Scientist', 'DevOps Engineer', 'Frontend Developer', 'Full Stack Developer', 'IT Support Specialist', 'Mobile Developer', 'Product Designer (UX/UI)', 'QA Engineer', 'Software Engineer', 'Solutions Architect'] },
+  { label: 'People, legal & education', roles: ['Attorney / Legal Counsel', 'Customer Success Manager', 'HR Manager', 'Recruiter', 'Teacher / Lecturer', 'Training and Development Specialist'] },
+  { label: 'Healthcare & science', roles: ['Clinical Research Associate', 'Doctor', 'Laboratory Technician', 'Nurse', 'Pharmacist', 'Research Scientist'] },
+  { label: 'Engineering & skilled professions', roles: ['Architect', 'Civil Engineer', 'Electrical Engineer', 'Mechanical Engineer', 'Supply Chain Manager', 'UX Researcher'] },
+];
+
+const CUSTOM_ROLE_VALUE = 'custom';
+
+const VoiceInputButton = ({ value, onTranscript, fieldName, className = '' }) => {
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+  const startingValueRef = useRef('');
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      window.alert('Voice input is not available in this browser. Please use the latest Chrome or Edge browser, allow microphone access, or type your response.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+    startingValueRef.current = value?.trim() ? `${value.trim()} ` : '';
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let index = 0; index < event.results.length; index += 1) transcript += event.results[index][0].transcript;
+      onTranscript(`${startingValueRef.current}${transcript}`.trim());
+    };
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        window.alert('Microphone access was blocked. Allow it in your browser settings and try again.');
+      }
+    };
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
+  return (
+    <Button type="button" variant={isListening ? 'destructive' : 'outline'} size="sm" onClick={toggleListening} className={`shrink-0 ${className}`} title={isListening ? `Stop recording ${fieldName}` : `Use voice to fill ${fieldName}`}>
+      {isListening ? <MicOff className="w-4 h-4 mr-1" /> : <Mic className="w-4 h-4 mr-1" />}
+      {isListening ? 'Stop' : 'Speak'}
+    </Button>
+  );
+};
+
+const TEMPLATE_DETAILS = {
+  modern: { name: 'Modern', description: 'Clean accent bar', color: [37, 99, 235] },
+  classic: { name: 'Classic', description: 'Timeless serif layout', color: [55, 65, 81] },
+  executive: { name: 'Executive', description: 'Bold leadership style', color: [15, 118, 110] },
+  minimal: { name: 'Minimal', description: 'Simple and focused', color: [23, 23, 23] },
+};
+
+const ResumeTemplatePreview = ({ template, formData, role, compact = false }) => {
+  const primary = template === 'executive' ? 'text-teal-800' : template === 'classic' ? 'text-slate-800' : template === 'minimal' ? 'text-neutral-900' : 'text-blue-700';
+  const border = template === 'executive' ? 'border-teal-700' : template === 'classic' ? 'border-slate-700' : template === 'minimal' ? 'border-neutral-900' : 'border-blue-600';
+  const name = formData.fullName || 'Your Name';
+  const heading = formData.title || role || 'Professional Title';
+  const sample = formData.summary || 'A concise professional summary appears here as you build your resume.';
+
+  return (
+    <div className={`bg-white text-gray-800 shadow-sm ${compact ? 'min-h-28 p-2 text-[6px]' : 'min-h-[430px] p-5 text-xs'} ${template === 'classic' ? 'font-serif' : 'font-sans'}`}>
+      {template === 'modern' && <div className="h-2 bg-blue-600 -mx-5 -mt-5 mb-4" />}
+      <div className={template === 'executive' ? 'border-l-4 border-teal-700 pl-3' : template === 'minimal' ? 'border-b border-neutral-900 pb-2' : ''}>
+        <p className={`font-bold ${primary} ${compact ? 'text-[9px]' : 'text-xl'}`}>{name}</p>
+        <p className={`uppercase tracking-wide ${compact ? 'text-[5px]' : 'text-[10px]'} text-gray-500`}>{heading}</p>
+        {!compact && <p className="mt-1 text-[10px] text-gray-500">{[formData.email, formData.phone, formData.location].filter(Boolean).join(' · ') || 'email@example.com · City, Country'}</p>}
+      </div>
+      <div className={compact ? 'mt-2 space-y-1' : 'mt-5 space-y-4'}>
+        {[
+          ['Profile', sample],
+          ['Experience', formData.experience || 'Your relevant achievements and responsibilities'],
+          ['Education', formData.education || 'Your degree, institution, and certifications'],
+          ['Skills', formData.skills || 'Role-relevant skills'],
+        ].map(([label, content]) => (
+          <div key={label}>
+            <p className={`font-bold uppercase tracking-wider ${primary} border-b ${border} ${compact ? 'text-[5px]' : 'text-[10px] pb-1'}`}>{label}</p>
+            <p className={`mt-1 whitespace-pre-line text-gray-600 ${compact ? 'line-clamp-2' : 'line-clamp-4 leading-relaxed'}`}>{content}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const TargetRoleField = ({ id, selectedRole, customRole, onSelectedRoleChange, onCustomRoleChange }) => (
+  <div className="space-y-3">
+    <div>
+      <Label htmlFor={id} className="text-sm font-semibold text-gray-700 mb-1 block">
+        Target Role <span className="text-red-500">*</span>
+      </Label>
+      <Select value={selectedRole} onValueChange={onSelectedRoleChange}>
+        <SelectTrigger id={id} className="h-11 w-full"><SelectValue placeholder="Choose your target role" /></SelectTrigger>
+        <SelectContent>
+          {ROLE_GROUPS.map((group) => (
+            <SelectGroup key={group.label}>
+              <SelectLabel>{group.label}</SelectLabel>
+              {group.roles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+            </SelectGroup>
+          ))}
+          <SelectGroup>
+            <SelectLabel>Other</SelectLabel>
+            <SelectItem value={CUSTOM_ROLE_VALUE}>Custom / Any Other Role</SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+    {selectedRole === CUSTOM_ROLE_VALUE && (
+      <div>
+        <Label htmlFor={`${id}-custom`} className="text-sm font-semibold text-gray-700 mb-1 block">Enter your target role</Label>
+        <Input id={`${id}-custom`} value={customRole} onChange={(event) => onCustomRoleChange(event.target.value)} placeholder="e.g. Sustainability Consultant" className="h-11" autoFocus />
+      </div>
+    )}
+  </div>
+);
+
 
 // ─── Upload Tab ────────────────────────────────────────────────────────────────
 const UploadTab = ({ onAnalysisComplete }) => {
   const [file, setFile] = useState(null);
   const [targetRole, setTargetRole] = useState('');
+  const [customRole, setCustomRole] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -50,14 +181,15 @@ const UploadTab = ({ onAnalysisComplete }) => {
   };
 
   const handleAnalyze = async () => {
+    const effectiveTargetRole = targetRole === CUSTOM_ROLE_VALUE ? customRole.trim() : targetRole;
     if (!file) { setError('Please upload a resume file.'); return; }
-    if (!targetRole.trim()) { setError('Please enter a target role.'); return; }
+    if (!effectiveTargetRole) { setError('Please choose a target role or enter a custom role.'); return; }
     setLoading(true);
     setError(null);
     try {
       const { text } = await APIService.extractResumeText(file);
-      const result = await APIService.analyzeATS(text, targetRole);
-      onAnalysisComplete(result, text, targetRole);
+      const result = await APIService.analyzeATS(text, effectiveTargetRole);
+      onAnalysisComplete(result, text, effectiveTargetRole);
     } catch (err) {
       setError(err.message || 'Failed to analyze resume. Please try again.');
     } finally {
@@ -114,16 +246,7 @@ const UploadTab = ({ onAnalysisComplete }) => {
 
       {/* Target Role */}
       <div>
-        <Label htmlFor="targetRole" className="text-sm font-semibold text-gray-700 mb-1 block">
-          Target Role <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          id="targetRole"
-          placeholder="e.g. Senior Financial Analyst, VP Finance, CA"
-          value={targetRole}
-          onChange={(e) => setTargetRole(e.target.value)}
-          className="h-11"
-        />
+        <TargetRoleField id="upload-target-role" selectedRole={targetRole} customRole={customRole} onSelectedRoleChange={setTargetRole} onCustomRoleChange={setCustomRole} />
         <p className="text-xs text-gray-500 mt-1">We'll tailor the ATS analysis to this role</p>
       </div>
 
@@ -484,27 +607,11 @@ const ATSResults = ({ results, rawCVText, jdText = '', targetRole, onReplaceWork
 
 
 // ─── AI Suggestion Box ─────────────────────────────────────────────────────────
-const AISuggestionBox = ({ suggestion, onUse, onDismiss }) => {
+const AISuggestionBox = ({ suggestion }) => {
   if (!suggestion) return null;
   return (
-    <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-semibold text-blue-700 flex items-center gap-1">
-          <Sparkles className="w-3.5 h-3.5" /> AI Suggestion
-        </p>
-        <button onClick={onDismiss} className="text-gray-400 hover:text-gray-600">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-      <p className="text-sm text-gray-700 leading-relaxed">{suggestion}</p>
-      <Button
-        variant="link"
-        size="sm"
-        className="mt-2 p-0 h-auto text-blue-600 font-semibold"
-        onClick={onUse}
-      >
-        ✓ Use this suggestion
-      </Button>
+    <div className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+      <Check className="h-4 w-4 shrink-0" /> AI polish applied. You can edit the rewritten text further.
     </div>
   );
 };
@@ -522,6 +629,8 @@ const ResumeBuilder = () => {
   const [cvjdCvText, setCvjdCvText] = useState('');
   const [cvjdCvFileName, setCvjdCvFileName] = useState('');
   const [cvjdJdFileName, setCvjdJdFileName] = useState('');
+  const [cvjdTargetRole, setCvjdTargetRole] = useState('');
+  const [cvjdCustomRole, setCvjdCustomRole] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '', location: '',
@@ -534,6 +643,7 @@ const ResumeBuilder = () => {
   const [sectionError, setSectionError] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState('modern');
   const [atsResults, setATSResults] = useState(null);
+  const templatePreviewRef = useRef(null);
 
   const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
 
@@ -570,6 +680,10 @@ const ResumeBuilder = () => {
       setSectionError('Please enter your target role first (top of form).');
       return;
     }
+    if (!formData[section].trim()) {
+      setSectionError(`Add or dictate your ${section} content before using AI Suggest.`);
+      return;
+    }
     setSectionError(null);
     setLoadingSection(section);
     try {
@@ -579,20 +693,18 @@ const ResumeBuilder = () => {
         role,
         parseInt(experienceYears) || 0
       );
-      setSuggestions(prev => ({ ...prev, [section]: result.suggestion || result.content || result }));
+      const improvedText = result.improved_text || result.suggestion || result.content;
+      if (typeof improvedText !== 'string' || !improvedText.trim()) {
+        throw new Error('AI did not return rewritten text. Please try again.');
+      }
+      handleChange(section, improvedText.trim());
+      setSuggestions(prev => ({ ...prev, [section]: true }));
     } catch (err) {
       setSectionError(`AI suggestion failed: ${err.message}`);
     } finally {
       setLoadingSection(null);
     }
   };
-
-  const applySuggestion = (field, value) => {
-    handleChange(field, typeof value === 'string' ? value : JSON.stringify(value));
-    setSuggestions(prev => ({ ...prev, [field]: null }));
-  };
-
-  const dismissSuggestion = (field) => setSuggestions(prev => ({ ...prev, [field]: null }));
 
   const handleAnalyzeATS = async () => {
     if (!role.trim()) { setSectionError('Please enter a target role to analyze ATS.'); return; }
@@ -609,17 +721,73 @@ const ResumeBuilder = () => {
     }
   };
 
+  const handleDownloadResume = () => {
+    if (!formData.fullName.trim() && !formData.summary.trim() && !formData.experience.trim()) {
+      setSectionError('Add some resume details before downloading a template.');
+      return;
+    }
+    const template = TEMPLATE_DETAILS[selectedTemplate];
+    const doc = new jsPDF();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 16;
+    const lineHeight = 5.5;
+    let y = margin;
+    const addLines = (text, fontSize = 10) => {
+      doc.setFontSize(fontSize);
+      const lines = doc.splitTextToSize(text, 178);
+      lines.forEach((line) => {
+        if (y + lineHeight > pageHeight - margin) { doc.addPage(); y = margin; }
+        doc.text(line, margin, y);
+        y += lineHeight;
+      });
+    };
+    doc.setFillColor(...template.color);
+    if (selectedTemplate === 'modern' || selectedTemplate === 'executive') doc.rect(0, 0, 210, 11, 'F');
+    y = selectedTemplate === 'modern' || selectedTemplate === 'executive' ? 22 : margin;
+    doc.setTextColor(...template.color);
+    doc.setFont(selectedTemplate === 'classic' ? 'times' : 'helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text(formData.fullName || 'Your Name', margin, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.text(formData.title || role || 'Professional Title', margin, y);
+    y += 7;
+    doc.setTextColor(75, 85, 99);
+    doc.setFont('helvetica', 'normal');
+    addLines([formData.email, formData.phone, formData.location].filter(Boolean).join(' | '), 9);
+    const sections = [['PROFESSIONAL SUMMARY', formData.summary], ['EXPERIENCE', formData.experience], ['EDUCATION', formData.education], ['SKILLS', formData.skills]];
+    sections.forEach(([heading, content]) => {
+      if (!content.trim()) return;
+      y += 4;
+      if (y + 10 > pageHeight - margin) { doc.addPage(); y = margin; }
+      doc.setTextColor(...template.color);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(heading, margin, y);
+      y += 6;
+      doc.setTextColor(55, 65, 81);
+      doc.setFont('helvetica', 'normal');
+      addLines(content, 10);
+    });
+    doc.save(`${(formData.fullName || 'Resume').replace(/[^a-z0-9]/gi, '_')}_${template.name}_Resume.pdf`);
+  };
+
+  const handlePreviewResume = () => templatePreviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   // FIX #8: compareCVJD handler — ensure APIService.compareCVJD exists in api.js
   const handleCompareCVJD = async () => {
     const cvText = cvjdCvText.trim() ? cvjdCvText : rawCVText;
+    const targetRole = cvjdTargetRole === CUSTOM_ROLE_VALUE ? cvjdCustomRole.trim() : cvjdTargetRole;
     if (!cvText.trim()) { setSectionError('Please upload a CV to compare.'); return; }
     if (!cvjdText.trim()) { setSectionError('Please paste a job description to compare.'); return; }
+    if (!targetRole) { setSectionError('Please choose a target role or enter a custom role.'); return; }
     setSectionError(null);
     setLoadingSection('cvjd');
     try {
-      const result = await APIService.compareCVJD(cvText, cvjdText);
+      const result = await APIService.compareCVJD(cvText, cvjdText, targetRole);
       setATSResults(result);
       setRawCVText(cvText);
+      setRole(targetRole);
     } catch (err) {
       setSectionError(`CV vs JD comparison failed: ${err.message}`);
     } finally {
@@ -630,7 +798,7 @@ const ResumeBuilder = () => {
   const templates = [
     { id: 'modern', name: 'Modern', preview: 'Clean & professional' },
     { id: 'classic', name: 'Classic', preview: 'Traditional format' },
-    { id: 'creative', name: 'Creative', preview: 'Stand-out design' },
+    { id: 'executive', name: 'Executive', preview: 'Leadership-focused' },
     { id: 'minimal', name: 'Minimal', preview: 'Simple & elegant' },
   ];
 
@@ -755,6 +923,7 @@ const ResumeBuilder = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-5">
+                    <TargetRoleField id="cvjd-target-role" selectedRole={cvjdTargetRole} customRole={cvjdCustomRole} onSelectedRoleChange={setCvjdTargetRole} onCustomRoleChange={setCvjdCustomRole} />
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-semibold text-gray-700 mb-1 block">
@@ -848,23 +1017,18 @@ const ResumeBuilder = () => {
                     <p className="text-sm font-semibold text-blue-800 mb-3">🎯 Set your target role — AI suggestions will be tailored to this</p>
                     <div className="grid md:grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-xs text-blue-700 font-semibold mb-1 block">Target Role *</Label>
-                        <Input
-                          placeholder="e.g. VP Finance, CA, CFO"
-                          value={role}
-                          onChange={(e) => setRole(e.target.value)}
-                          className="bg-white"
-                        />
+                        <div className="mb-1 flex items-center justify-between">
+                          <Label className="text-xs text-blue-700 font-semibold">Target Role *</Label>
+                          <VoiceInputButton value={role} onTranscript={setRole} fieldName="target role" className="h-7 text-xs" />
+                        </div>
+                        <Input placeholder="e.g. VP Finance, CA, CFO" value={role} onChange={(e) => setRole(e.target.value)} className="bg-white" />
                       </div>
                       <div>
-                        <Label className="text-xs text-blue-700 font-semibold mb-1 block">Years of Experience</Label>
-                        <Input
-                          type="number"
-                          placeholder="e.g. 20"
-                          value={experienceYears}
-                          onChange={(e) => setExperienceYears(e.target.value)}
-                          className="bg-white"
-                        />
+                        <div className="mb-1 flex items-center justify-between">
+                          <Label className="text-xs text-blue-700 font-semibold">Years of Experience</Label>
+                          <VoiceInputButton value={experienceYears} onTranscript={setExperienceYears} fieldName="years of experience" className="h-7 text-xs" />
+                        </div>
+                        <Input type="number" placeholder="e.g. 20" value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} className="bg-white" />
                       </div>
                     </div>
                   </CardContent>
@@ -884,26 +1048,26 @@ const ResumeBuilder = () => {
                   <CardContent className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="fullName">Full Name</Label>
+                        <div className="mb-1 flex items-center justify-between"><Label htmlFor="fullName">Full Name</Label><VoiceInputButton value={formData.fullName} onTranscript={(value) => handleChange('fullName', value)} fieldName="full name" className="h-7 text-xs" /></div>
                         <Input id="fullName" placeholder="Rupinder Singh" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} />
                       </div>
                       <div>
-                        <Label htmlFor="title">Professional Title</Label>
+                        <div className="mb-1 flex items-center justify-between"><Label htmlFor="title">Professional Title</Label><VoiceInputButton value={formData.title} onTranscript={(value) => handleChange('title', value)} fieldName="professional title" className="h-7 text-xs" /></div>
                         <Input id="title" placeholder="Chartered Accountant | VP Audit" value={formData.title} onChange={(e) => handleChange('title', e.target.value)} />
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="email">Email</Label>
+                        <div className="mb-1 flex items-center justify-between"><Label htmlFor="email">Email</Label><VoiceInputButton value={formData.email} onTranscript={(value) => handleChange('email', value)} fieldName="email" className="h-7 text-xs" /></div>
                         <Input id="email" type="email" placeholder="you@example.com" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} />
                       </div>
                       <div>
-                        <Label htmlFor="phone">Phone</Label>
+                        <div className="mb-1 flex items-center justify-between"><Label htmlFor="phone">Phone</Label><VoiceInputButton value={formData.phone} onTranscript={(value) => handleChange('phone', value)} fieldName="phone number" className="h-7 text-xs" /></div>
                         <Input id="phone" placeholder="+91 98765 43210" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} />
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="location">Location</Label>
+                      <div className="mb-1 flex items-center justify-between"><Label htmlFor="location">Location</Label><VoiceInputButton value={formData.location} onTranscript={(value) => handleChange('location', value)} fieldName="location" className="h-7 text-xs" /></div>
                       <Input id="location" placeholder="New Delhi, India" value={formData.location} onChange={(e) => handleChange('location', e.target.value)} />
                     </div>
                   </CardContent>
@@ -920,7 +1084,7 @@ const ResumeBuilder = () => {
                           <CardDescription>Compelling overview of your career</CardDescription>
                         </div>
                       </div>
-                      <SectionAIButton section="summary" />
+                      <div className="flex gap-2"><VoiceInputButton value={formData.summary} onTranscript={(value) => handleChange('summary', value)} fieldName="professional summary" /><SectionAIButton section="summary" /></div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -932,8 +1096,6 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.summary}
-                      onUse={() => applySuggestion('summary', suggestions.summary)}
-                      onDismiss={() => dismissSuggestion('summary')}
                     />
                   </CardContent>
                 </Card>
@@ -949,7 +1111,7 @@ const ResumeBuilder = () => {
                           <CardDescription>Your professional history and achievements</CardDescription>
                         </div>
                       </div>
-                      <SectionAIButton section="experience" />
+                      <div className="flex gap-2"><VoiceInputButton value={formData.experience} onTranscript={(value) => handleChange('experience', value)} fieldName="work experience" /><SectionAIButton section="experience" /></div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -961,8 +1123,6 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.experience}
-                      onUse={() => applySuggestion('experience', suggestions.experience)}
-                      onDismiss={() => dismissSuggestion('experience')}
                     />
                   </CardContent>
                 </Card>
@@ -978,7 +1138,7 @@ const ResumeBuilder = () => {
                           <CardDescription>Degrees and certifications</CardDescription>
                         </div>
                       </div>
-                      <SectionAIButton section="education" />
+                      <div className="flex gap-2"><VoiceInputButton value={formData.education} onTranscript={(value) => handleChange('education', value)} fieldName="education" /><SectionAIButton section="education" /></div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -990,8 +1150,6 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.education}
-                      onUse={() => applySuggestion('education', suggestions.education)}
-                      onDismiss={() => dismissSuggestion('education')}
                     />
                   </CardContent>
                 </Card>
@@ -1007,7 +1165,7 @@ const ResumeBuilder = () => {
                           <CardDescription>Technical and soft skills</CardDescription>
                         </div>
                       </div>
-                      <SectionAIButton section="skills" />
+                      <div className="flex gap-2"><VoiceInputButton value={formData.skills} onTranscript={(value) => handleChange('skills', value)} fieldName="skills" /><SectionAIButton section="skills" /></div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -1019,8 +1177,6 @@ const ResumeBuilder = () => {
                     />
                     <AISuggestionBox
                       suggestion={suggestions.skills}
-                      onUse={() => applySuggestion('skills', suggestions.skills)}
-                      onDismiss={() => dismissSuggestion('skills')}
                     />
                   </CardContent>
                 </Card>
@@ -1033,6 +1189,7 @@ const ResumeBuilder = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Choose Template</CardTitle>
+                    <CardDescription>Choose a design to update the live preview and downloaded PDF.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-2">
@@ -1040,17 +1197,27 @@ const ResumeBuilder = () => {
                         <button
                           key={t.id}
                           onClick={() => setSelectedTemplate(t.id)}
-                          className={`p-3 rounded-xl border-2 transition-all text-left ${
+                          className={`overflow-hidden rounded-xl border-2 text-left transition-all ${
                             selectedTemplate === t.id
                               ? 'border-blue-500 bg-blue-50'
                               : 'border-gray-200 hover:border-blue-200'
                           }`}
                         >
-                          <div className="font-semibold text-sm">{t.name}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{t.preview}</div>
+                          <ResumeTemplatePreview template={t.id} formData={formData} role={role} compact />
+                          <div className="p-2"><div className="font-semibold text-sm">{t.name}</div><div className="text-xs text-gray-500 mt-0.5">{t.preview}</div></div>
                         </button>
                       ))}
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card ref={templatePreviewRef} className="overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="text-base">Live resume preview</CardTitle>
+                    <CardDescription>{TEMPLATE_DETAILS[selectedTemplate].name} template</CardDescription>
+                  </CardHeader>
+                  <CardContent className="bg-gray-100 p-3">
+                    <ResumeTemplatePreview template={selectedTemplate} formData={formData} role={role} />
                   </CardContent>
                 </Card>
 
@@ -1084,10 +1251,10 @@ const ResumeBuilder = () => {
                 {/* Actions */}
                 <Card>
                   <CardContent className="pt-6 space-y-2">
-                    <Button className="w-full h-11 bg-blue-600 hover:bg-blue-700 font-semibold">
+                    <Button onClick={handlePreviewResume} className="w-full h-11 bg-blue-600 hover:bg-blue-700 font-semibold">
                       <FileText className="w-4 h-4 mr-2" /> Preview Resume
                     </Button>
-                    <Button variant="outline" className="w-full h-11 font-semibold">
+                    <Button onClick={handleDownloadResume} variant="outline" className="w-full h-11 font-semibold">
                       <Download className="w-4 h-4 mr-2" /> Download PDF
                     </Button>
                   </CardContent>

@@ -8,7 +8,17 @@ from dotenv import load_dotenv
 # Load .env FIRST
 # -------------------------------------------------
 ROOT_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(ROOT_DIR / ".env")
+BACKEND_DIR = Path(__file__).resolve().parent
+
+# Production credentials are supplied as environment variables by the host. For
+# local development, use backend/.env rather than the repository-root sample
+# configuration, which intentionally contains placeholder values.
+load_dotenv(ROOT_DIR / ".env", override=False)
+load_dotenv(BACKEND_DIR / ".env", override=True)
+
+_placeholder_keys = {"", "your_gemini_api_key", "replace_with_your_gemini_api_key"}
+if os.getenv("GEMINI_API_KEY", "").strip().lower() in _placeholder_keys:
+    os.environ.pop("GEMINI_API_KEY", None)
 
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware

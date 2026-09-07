@@ -153,7 +153,7 @@ def fallback_ats_analysis(resume_text: str, target_role: str) -> Dict[str, Any]:
     }
 
 
-def fallback_cv_jd_analysis(cv_text: str, jd_text: str) -> Dict[str, Any]:
+def fallback_cv_jd_analysis(cv_text: str, jd_text: str, target_role: str = "target role") -> Dict[str, Any]:
     cv_lower = cv_text.lower()
     jd_words = [
         word.strip(".,:;()[]{}").lower()
@@ -194,7 +194,7 @@ def fallback_cv_jd_analysis(cv_text: str, jd_text: str) -> Dict[str, Any]:
         },
         "recommendations": [
             "Put the most important JD keywords in the top third of the CV.",
-            "Add a short target-role summary aligned to the job description.",
+            f"Add a short {target_role} summary aligned to the job description.",
             "Prioritize recent, measurable achievements that map to the JD requirements."
         ],
         "missing_cv_points": missing,
@@ -255,6 +255,32 @@ def fallback_interview_questions(interview_type: str, role: str, experience_leve
         }
         for index, question in enumerate(questions)
     ]
+
+
+def fallback_resume_suggestion(section: str, current_text: str) -> Dict[str, Any]:
+    """Keep section polishing available if the AI provider is temporarily unavailable."""
+    text = current_text.strip()
+    cleaned_lines = [line.strip().lstrip("•- ").strip() for line in text.splitlines() if line.strip()]
+
+    if section == "experience":
+        improved_text = "\n".join(f"• {line}" for line in cleaned_lines)
+        tips = ["Each entry is formatted as a resume bullet. Add metrics where they accurately reflect your work."]
+    elif section == "education":
+        improved_text = "\n".join(f"• {line}" for line in cleaned_lines)
+        tips = ["Use Institution | Qualification | Year for each education entry."]
+    elif section == "skills":
+        skills = [skill.strip().lstrip("•- ") for line in cleaned_lines for skill in line.replace(";", ",").split(",") if skill.strip()]
+        improved_text = ", ".join(dict.fromkeys(skills))
+        tips = ["Skills are separated by commas for ATS readability."]
+    else:
+        improved_text = " ".join(cleaned_lines)
+        if improved_text:
+            improved_text = improved_text[0].upper() + improved_text[1:]
+            if improved_text[-1] not in ".!?":
+                improved_text += "."
+        tips = ["The summary was cleaned while preserving the original meaning."]
+
+    return {"improved_text": improved_text, "keywords": [], "tips": tips}
 
 
 def fallback_interview_feedback(answer: str) -> Dict[str, Any]:
@@ -351,12 +377,20 @@ Return ONLY JSON:
     ) -> Dict[str, Any]:
 
         prompt = f"""
-You are a professional resume writer.
+You are a meticulous professional resume writer. Rewrite only the supplied section in polished, concise, professional English. Correct grammar, spelling, punctuation, and clarity while preserving every truthful fact. Do not invent employers, qualifications, dates, metrics, responsibilities, skills, or achievements.
 
-Section: {section}
-Current text: {current_text}
 Target role: {role}
-Experience: {experience_years}
+Experience years: {experience_years}
+Section to rewrite: {section}
+
+Apply these non-negotiable section rules:
+- summary: Return one polished professional summary in paragraph form. Preserve the candidate's meaning and use strong, precise language.
+- experience: Return only achievement-focused bullet points. Every non-empty line must begin with "• ". Keep information truthful and turn responsibilities into clear action-and-impact statements where the supplied text supports it.
+- education: Return one entry per line, in exactly this format: "Institution | Qualification | Year". Use only information stated in the supplied text; do not guess a missing year or institution.
+- skills: Return only a single comma-separated list of distinct skills. No bullets, numbering, introduction, or closing punctuation.
+
+Supplied text:
+{current_text}
 
 Return ONLY JSON:
 {{
@@ -366,8 +400,16 @@ Return ONLY JSON:
 }}
 """
 
-        text = call_gemini(prompt)
-        return extract_json(text)
+        try:
+            text = call_gemini(prompt)
+            result = extract_json(text)
+            improved_text = result.get("improved_text") if isinstance(result, dict) else None
+            if not isinstance(improved_text, str) or not improved_text.strip():
+                raise ValueError("AI response did not include improved_text")
+            return result
+        except Exception as error:
+            print("⚠️ Falling back to deterministic resume section polish:", str(error))
+            return fallback_resume_suggestion(section, current_text)
 
     @staticmethod
     def analyze_ats_compatibility(
@@ -412,11 +454,14 @@ Return ONLY JSON:
             return fallback_ats_analysis(resume_text, target_role)
 
     @staticmethod
-    def compare_cv_to_jd(cv_text: str, jd_text: str) -> Dict[str, Any]:
+    def compare_cv_to_jd(cv_text: str, jd_text: str, target_role: str) -> Dict[str, Any]:
         prompt = f"""
 You are an ATS and recruitment screening expert.
 
-Compare this CV against this job description. Identify alignment gaps and concrete CV rewrite guidance.
+Compare this CV against this job description for the target role below. Identify alignment gaps and concrete CV rewrite guidance.
+
+Target Role:
+{target_role}
 
 CV:
 {cv_text}
@@ -447,7 +492,7 @@ Return ONLY JSON:
             return extract_json(text)
         except Exception as e:
             print("⚠️ Falling back to deterministic CV vs JD analysis:", str(e))
-            return fallback_cv_jd_analysis(cv_text, jd_text)
+            return fallback_cv_jd_analysis(cv_text, jd_text, target_role)
 
     @staticmethod
     def enhance_cv_for_jd(

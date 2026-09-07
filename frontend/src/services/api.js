@@ -105,12 +105,13 @@ const APIService = {
     return uploadFile("/resume/extract-text", file);
   },
 
-  compareCVJD(cvText, jdText) {
+  compareCVJD(cvText, jdText, targetRole) {
     return request("/resume/cv-vs-jd", {
       method: "POST",
       body: JSON.stringify({
         cv_text: cvText,
         jd_text: jdText,
+        target_role: targetRole,
       }),
     });
   },
